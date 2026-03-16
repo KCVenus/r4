@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(git commit:*)",
+      "Bash(php -r \"echo password_hash\\(''user'', PASSWORD_DEFAULT\\) . PHP_EOL; echo password_hash\\(''admin'', PASSWORD_DEFAULT\\) . PHP_EOL;\")",
+      "Bash(\"c:/wamp64/bin/php/php8.2.28/php.exe\" -r \"echo password_hash\\(''user'', PASSWORD_DEFAULT\\) . PHP_EOL; echo password_hash\\(''admin'', PASSWORD_DEFAULT\\) . PHP_EOL;\")",
+      "Bash(/c/wamp64/bin/php/php8.2.26/php.exe -r \"echo password_hash\\(''user'', PASSWORD_DEFAULT\\) . PHP_EOL; echo password_hash\\(''admin'', PASSWORD_DEFAULT\\) . PHP_EOL;\")"
+    ]
+  }
+}
