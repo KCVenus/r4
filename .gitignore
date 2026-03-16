@@ -1,0 +1,14 @@
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Future-proofing
+node_modules/
+dist/

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Survey</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header id="app-header">
+    <h1 id="app-title"></h1>
+    <div id="progress-bar-wrap" class="hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="progress-bar"></div>
+    </div>
+  </header>
+
+  <main>
+    <section id="view-start">
+      <p id="app-description"></p>
+      <button id="btn-start" class="btn-primary">Begin</button>
+    </section>
+
+    <section id="view-question">
+      <p id="question-counter" aria-live="polite"></p>
+      <h2 id="question-text"></h2>
+      <div id="options-container"></div>
+    </section>
+
+    <section id="view-summary">
+      <h2 class="summary-title">Your Answers</h2>
+      <ol id="summary-list"></ol>
+      <button id="btn-restart" class="btn-secondary">Start Over</button>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
