@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Sign in — Survey</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-body">
+
+  <main class="auth-card">
+    <div class="auth-logo">
+      <span class="auth-logo-icon">◈</span>
+    </div>
+    <h1 class="auth-title" id="auth-title">Sign in</h1>
+
+    <div id="auth-error" class="auth-error hidden"></div>
+
+    <form id="auth-form" novalidate>
+      <div class="field">
+        <label for="username">Username</label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+          required
+          minlength="3"
+          maxlength="50"
+        />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+          minlength="4"
+        />
+      </div>
+
+      <button type="submit" id="auth-submit" class="btn-primary auth-btn">
+        Sign in
+      </button>
+    </form>
+
+    <p class="auth-toggle">
+      <span id="toggle-text">No account?</span>
+      <button id="toggle-btn" class="link-btn">Create one</button>
+    </p>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var isLogin = true;
+
+      var titleEl   = document.getElementById('auth-title');
+      var submitEl  = document.getElementById('auth-submit');
+      var toggleTxt = document.getElementById('toggle-text');
+      var toggleBtn = document.getElementById('toggle-btn');
+      var errorEl   = document.getElementById('auth-error');
+      var form      = document.getElementById('auth-form');
+      var passInput = document.getElementById('password');
+
+      // If already logged in, go to survey
+      fetch('api/auth.php', { credentials: 'include' })
+        .then(function (r) {
+          if (r.ok) window.location.href = 'index.html';
+        })
+        .catch(function () {});
+
+      function setMode(login) {
+        isLogin = login;
+        titleEl.textContent   = login ? 'Sign in' : 'Create account';
+        submitEl.textContent  = login ? 'Sign in' : 'Register';
+        toggleTxt.textContent = login ? 'No account?' : 'Already registered?';
+        toggleBtn.textContent = login ? 'Create one' : 'Sign in';
+        passInput.setAttribute('autocomplete', login ? 'current-password' : 'new-password');
+        hideError();
+      }
+
+      function showError(msg) {
+        errorEl.textContent = msg;
+        errorEl.classList.remove('hidden');
+      }
+
+      function hideError() {
+        errorEl.classList.add('hidden');
+      }
+
+      toggleBtn.addEventListener('click', function () {
+        setMode(!isLogin);
+      });
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        hideError();
+
+        var username = document.getElementById('username').value.trim();
+        var password = document.getElementById('password').value;
+        var action   = isLogin ? 'login' : 'register';
+
+        submitEl.disabled = true;
+        submitEl.textContent = isLogin ? 'Signing in…' : 'Registering…';
+
+        fetch('api/auth.php', {
+          method:      'POST',
+          credentials: 'include',
+          headers:     { 'Content-Type': 'application/json' },
+          body:        JSON.stringify({ action: action, username: username, password: password }),
+        })
+          .then(function (r) {
+            return r.json().then(function (data) {
+              return { ok: r.ok, data: data };
+            });
+          })
+          .then(function (result) {
+            if (result.ok) {
+              window.location.href = 'index.html';
+            } else {
+              showError(result.data.error || 'Something went wrong');
+              submitEl.disabled = false;
+              submitEl.textContent = isLogin ? 'Sign in' : 'Register';
+            }
+          })
+          .catch(function () {
+            showError('Network error — is the server running?');
+            submitEl.disabled = false;
+            submitEl.textContent = isLogin ? 'Sign in' : 'Register';
+          });
+      });
+    })();
+  </script>
+</body>
+</html>
