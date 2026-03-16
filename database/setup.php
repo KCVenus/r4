@@ -1,4 +1,6 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 /**
  * r4 Survey — First-run setup
  * Run ONCE after importing schema.sql:
