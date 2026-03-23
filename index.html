@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#2563eb" />
-  <title>Survey</title>
+  <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1e293b"  media="(prefers-color-scheme: dark)" />
+  <title>Test d'orientation</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -15,7 +16,10 @@
       <div id="user-info" class="user-info hidden">
         <span id="username-display"></span>
         <a id="admin-link" href="admin.html" class="link-btn hidden">Admin</a>
-        <button id="btn-logout" class="link-btn">Logout</button>
+        <button id="btn-logout" class="link-btn">Déconnexion</button>
+      </div>
+      <div id="guest-info" class="user-info hidden">
+        <a href="login.html" class="link-btn">Connexion</a>
       </div>
     </div>
     <div id="progress-bar-wrap" class="hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -25,32 +29,31 @@
 
   <main>
 
-    <!-- Start screen -->
+    <!-- Écran d'accueil -->
     <section id="view-start">
       <p id="app-description"></p>
-
-      <!-- Last test card — shown only if user has a previous response -->
-      <div id="last-test-card" class="last-test-card hidden">
-        <p class="last-test-title">Your last answers</p>
-        <ol id="last-test-list" class="last-test-list"></ol>
-        <p id="last-test-date" class="last-test-date"></p>
-      </div>
-
-      <button id="btn-start" class="btn-primary">Begin</button>
+      <button id="btn-start" class="btn-primary">Commencer le test</button>
     </section>
 
-    <!-- Question screen -->
+    <!-- Écran question -->
     <section id="view-question">
-      <p id="question-counter" aria-live="polite"></p>
-      <h2 id="question-text"></h2>
+      <div id="question-counter"></div>
+      <p id="question-text"></p>
       <div id="options-container"></div>
     </section>
 
-    <!-- Summary screen -->
-    <section id="view-summary">
-      <h2 class="summary-title">Your Answers</h2>
-      <ol id="summary-list"></ol>
-      <button id="btn-restart" class="btn-secondary">Start Over</button>
+    <!-- Écran résultat -->
+    <section id="view-result">
+      <h2 class="result-title">Formations recommandées</h2>
+      <p class="result-subtitle">Selon vos réponses, voici les formations qui vous correspondent le mieux&nbsp;:</p>
+      <div id="formations-list"></div>
+
+      <div id="save-cta" class="save-cta hidden">
+        <p class="save-cta-text">Connectez-vous pour sauvegarder vos résultats et les retrouver plus tard.</p>
+        <a href="login.html" class="btn-primary save-cta-btn">Se connecter / Créer un compte</a>
+      </div>
+
+      <button id="btn-restart" class="btn-secondary">Recommencer le test</button>
     </section>
 
   </main>

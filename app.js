@@ -1,48 +1,43 @@
 (function () {
   'use strict';
 
-  // ── State ─────────────────────────────────────────────────────────────────
+  // ── État ──────────────────────────────────────────────────────────────────
   var state = {
-    questions:    [],
-    answers:      {},   // { q1: { label, value }, ... }
+    questions:   [],
+    answers:     {},
     currentIndex: 0,
-    meta:         {},
-    currentUser:  null,
+    currentUser: null,
   };
 
-  // ── DOM refs ──────────────────────────────────────────────────────────────
+  // ── Refs DOM ──────────────────────────────────────────────────────────────
   var els = {
     title:            document.getElementById('app-title'),
     description:      document.getElementById('app-description'),
     progressBarWrap:  document.getElementById('progress-bar-wrap'),
     progressBar:      document.getElementById('progress-bar'),
     userInfo:         document.getElementById('user-info'),
+    guestInfo:        document.getElementById('guest-info'),
     usernameDisplay:  document.getElementById('username-display'),
     adminLink:        document.getElementById('admin-link'),
     btnLogout:        document.getElementById('btn-logout'),
-    viewStart:        document.getElementById('view-start'),
-    viewQuestion:     document.getElementById('view-question'),
-    viewSummary:      document.getElementById('view-summary'),
-    lastTestCard:     document.getElementById('last-test-card'),
-    lastTestList:     document.getElementById('last-test-list'),
-    lastTestDate:     document.getElementById('last-test-date'),
     counter:          document.getElementById('question-counter'),
     questionText:     document.getElementById('question-text'),
     optionsContainer: document.getElementById('options-container'),
-    summaryList:      document.getElementById('summary-list'),
+    formationsList:   document.getElementById('formations-list'),
+    saveCta:          document.getElementById('save-cta'),
     btnStart:         document.getElementById('btn-start'),
     btnRestart:       document.getElementById('btn-restart'),
   };
 
-  // ── View switching ────────────────────────────────────────────────────────
+  // ── Vues ──────────────────────────────────────────────────────────────────
   function showView(name) {
-    ['start', 'question', 'summary'].forEach(function (v) {
+    ['start', 'question', 'result'].forEach(function (v) {
       document.getElementById('view-' + v).classList.toggle('active', v === name);
     });
-    els.progressBarWrap.classList.toggle('hidden', name === 'start');
+    els.progressBarWrap.classList.toggle('hidden', name !== 'question');
   }
 
-  // ── Progress bar ──────────────────────────────────────────────────────────
+  // ── Barre de progression ──────────────────────────────────────────────────
   function updateProgress() {
     var total = state.questions.length;
     var pct   = total === 0 ? 0 : (state.currentIndex / total) * 100;
@@ -50,21 +45,20 @@
     els.progressBarWrap.setAttribute('aria-valuenow', Math.round(pct));
   }
 
-  // ── Question rendering ────────────────────────────────────────────────────
+  // ── Affichage question ────────────────────────────────────────────────────
   function renderQuestion() {
     var q     = state.questions[state.currentIndex];
     var total = state.questions.length;
 
-    els.counter.textContent    = 'Question ' + (state.currentIndex + 1) + ' of ' + total;
+    els.counter.textContent      = 'Question ' + (state.currentIndex + 1) + ' / ' + total;
     els.questionText.textContent = q.text;
 
     els.optionsContainer.innerHTML = '';
     q.options.forEach(function (opt) {
       var btn = document.createElement('button');
-      btn.className   = 'option-btn';
-      btn.textContent = opt.label;
+      btn.className     = 'option-btn';
+      btn.textContent   = opt.label;
       btn.dataset.value = opt.value;
-      btn.setAttribute('aria-label', opt.label);
       btn.addEventListener('click', function () { handleAnswer(q, opt); });
       els.optionsContainer.appendChild(btn);
     });
@@ -72,10 +66,11 @@
     updateProgress();
   }
 
-  // ── Answer recording ──────────────────────────────────────────────────────
+  // ── Enregistrement réponse ────────────────────────────────────────────────
   function handleAnswer(question, option) {
     els.optionsContainer.querySelectorAll('.option-btn').forEach(function (b) {
       b.disabled = true;
+      if (b.dataset.value === option.value) b.classList.add('selected');
     });
 
     state.answers[question.id] = {
@@ -91,168 +86,164 @@
       if (state.currentIndex < state.questions.length) {
         renderQuestion();
       } else {
-        submitAndShowSummary();
+        finishSurvey();
       }
     }, 180);
   }
 
-  // ── Submit answers to API then show summary ───────────────────────────────
-  function submitAndShowSummary() {
+  // ── Fin du test ───────────────────────────────────────────────────────────
+  function finishSurvey() {
     var answersArray = state.questions.map(function (q) {
       return state.answers[q.id];
     });
 
-    fetch('api/answers.php', {
-      method:      'POST',
-      credentials: 'include',
-      headers:     { 'Content-Type': 'application/json' },
-      body:        JSON.stringify({ answers: answersArray }),
+    // Sauvegarde en BDD si connecté
+    if (state.currentUser) {
+      fetch('api/answers', {
+        method:      'POST',
+        credentials: 'include',
+        headers:     { 'Content-Type': 'application/json' },
+        body:        JSON.stringify({ answers: answersArray }),
+      }).catch(function () {});
+    }
+
+    // Recommandations
+    fetch('api/recommend', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ answers: answersArray }),
     })
-    .catch(function () { /* save failed silently — survey still shows */ })
-    .finally(function () {
-      showSummary();
-    });
+    .then(function (r) { return r.ok ? r.json() : { formations: [] }; })
+    .then(function (data) { showResult(data.formations || []); })
+    .catch(function ()    { showResult([]); });
   }
 
-  // ── Summary screen ────────────────────────────────────────────────────────
-  function showSummary() {
+  // ── Écran résultat ────────────────────────────────────────────────────────
+  function showResult(formations) {
     els.progressBar.style.width = '100%';
     els.progressBarWrap.setAttribute('aria-valuenow', 100);
-    els.summaryList.innerHTML = '';
 
-    state.questions.forEach(function (q, i) {
-      var answer = state.answers[q.id];
-      var li  = document.createElement('li');
-      var qEl = document.createElement('div');
-      var aEl = document.createElement('div');
+    els.formationsList.innerHTML = '';
 
-      qEl.className   = 'summary-question';
-      qEl.textContent = (i + 1) + '. ' + q.text;
-      aEl.className   = 'summary-answer';
-      aEl.textContent = answer ? answer.chosen_label : '—';
+    if (formations.length === 0) {
+      var empty = document.createElement('p');
+      empty.className   = 'no-result';
+      empty.textContent = 'Aucune formation trouvée. Contactez-nous pour être orienté.';
+      els.formationsList.appendChild(empty);
+    } else {
+      formations.forEach(function (f, i) {
+        var card = document.createElement('div');
+        card.className = 'formation-card' + (i === 0 ? ' formation-card--top' : '');
 
-      li.appendChild(qEl);
-      li.appendChild(aEl);
-      els.summaryList.appendChild(li);
-    });
+        if (i === 0) {
+          var badge = document.createElement('span');
+          badge.className   = 'formation-badge';
+          badge.textContent = '★ Meilleure correspondance';
+          card.appendChild(badge);
+        }
 
-    showView('summary');
+        var name = document.createElement('h3');
+        name.className   = 'formation-name';
+        name.textContent = f.name;
+        card.appendChild(name);
+
+        if (f.description) {
+          var desc = document.createElement('p');
+          desc.className   = 'formation-desc';
+          desc.textContent = f.description;
+          card.appendChild(desc);
+        }
+
+        var actions = document.createElement('div');
+        actions.className = 'formation-actions';
+
+        if (f.contact_url) {
+          var link = document.createElement('a');
+          link.href        = f.contact_url;
+          link.target      = '_blank';
+          link.rel         = 'noopener noreferrer';
+          link.className   = 'btn-primary formation-btn';
+          link.textContent = 'En savoir plus';
+          actions.appendChild(link);
+        }
+
+        if (f.contact_email) {
+          var mailto = document.createElement('a');
+          mailto.href        = 'mailto:' + f.contact_email;
+          mailto.className   = 'btn-secondary formation-btn';
+          mailto.textContent = 'Contacter par e-mail';
+          actions.appendChild(mailto);
+        }
+
+        if (actions.children.length > 0) card.appendChild(actions);
+        els.formationsList.appendChild(card);
+      });
+    }
+
+    // CTA connexion uniquement pour les visiteurs
+    if (!state.currentUser) {
+      els.saveCta.classList.remove('hidden');
+    }
+
+    showView('result');
   }
 
-  // ── Restart ───────────────────────────────────────────────────────────────
+  // ── Recommencer ───────────────────────────────────────────────────────────
   function restart() {
     state.answers      = {};
     state.currentIndex = 0;
     els.progressBar.style.width = '0%';
-    // Refresh last test card after completing a new survey
-    fetchLastTest();
+    els.saveCta.classList.add('hidden');
     showView('start');
   }
 
-  // ── Last test card ────────────────────────────────────────────────────────
-  function fetchLastTest() {
-    fetch('api/answers.php?action=last', { credentials: 'include' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (data) {
-        if (!data || !data.answers || data.answers.length === 0) {
-          els.lastTestCard.classList.add('hidden');
-          return;
-        }
-
-        els.lastTestList.innerHTML = '';
-        data.answers.forEach(function (a) {
-          var li  = document.createElement('li');
-          var qEl = document.createElement('span');
-          var aEl = document.createElement('span');
-
-          qEl.className   = 'lt-question';
-          qEl.textContent = a.question_text;
-          aEl.className   = 'lt-answer';
-          aEl.textContent = a.chosen_label;
-
-          li.appendChild(qEl);
-          li.appendChild(aEl);
-          els.lastTestList.appendChild(li);
-        });
-
-        var d = new Date(data.completed_at);
-        els.lastTestDate.textContent = 'Completed on ' + d.toLocaleDateString(undefined, {
-          day: '2-digit', month: 'long', year: 'numeric',
-        });
-
-        els.lastTestCard.classList.remove('hidden');
-        els.btnStart.textContent = 'Retake survey';
-      })
-      .catch(function () {
-        els.lastTestCard.classList.add('hidden');
-      });
-  }
-
-  // ── Auth: populate header ─────────────────────────────────────────────────
+  // ── En-tête ───────────────────────────────────────────────────────────────
   function setupHeader(user) {
-    els.usernameDisplay.textContent = user.username;
-    els.userInfo.classList.remove('hidden');
-
-    if (user.role === 'admin') {
-      els.adminLink.classList.remove('hidden');
-    }
-
-    els.btnLogout.addEventListener('click', function () {
-      fetch('api/auth.php', {
-        method:      'POST',
-        credentials: 'include',
-        headers:     { 'Content-Type': 'application/json' },
-        body:        JSON.stringify({ action: 'logout' }),
-      }).finally(function () {
-        window.location.href = 'login.html';
-      });
-    });
-  }
-
-  // ── Data loading ──────────────────────────────────────────────────────────
-  function loadQuestions() {
-    return fetch('questions.json')
-      .then(function (r) {
-        if (!r.ok) throw new Error('Failed to load questions.json');
-        return r.json();
-      })
-      .then(function (data) {
-        if (!data.questions || !Array.isArray(data.questions)) {
-          throw new Error('questions.json must have a "questions" array');
-        }
-        data.questions.forEach(function (q, i) {
-          if (!q.options || q.options.length !== 2) {
-            throw new Error('Question at index ' + i + ' must have exactly 2 options');
-          }
+    if (user) {
+      state.currentUser = user;
+      els.usernameDisplay.textContent = user.username;
+      els.userInfo.classList.remove('hidden');
+      if (user.role === 'admin') {
+        els.adminLink.classList.remove('hidden');
+      }
+      els.btnLogout.addEventListener('click', function () {
+        fetch('api/auth', {
+          method:      'POST',
+          credentials: 'include',
+          headers:     { 'Content-Type': 'application/json' },
+          body:        JSON.stringify({ action: 'logout' }),
+        }).finally(function () {
+          window.location.href = 'login.html';
         });
-        state.questions = data.questions;
-        state.meta      = data.meta || {};
       });
+    } else {
+      els.guestInfo.classList.remove('hidden');
+    }
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────
   function init() {
-    // 1. Check auth — redirect to login if not logged in
-    fetch('api/auth.php', { credentials: 'include' })
+    // Auth optionnelle — pas de redirection si non connecté
+    fetch('api/auth', { credentials: 'include' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function ()  { return null; })
+      .then(function (user) {
+        setupHeader(user);
+        return fetch('api/questions');
+      })
       .then(function (r) {
-        if (!r.ok) { window.location.href = 'login.html'; return null; }
+        if (!r.ok) throw new Error('Impossible de charger les questions');
         return r.json();
       })
-      .then(function (user) {
-        if (!user) return;
+      .then(function (data) {
+        if (!data.questions || data.questions.length === 0) {
+          throw new Error('Aucune question disponible');
+        }
+        state.questions = data.questions;
 
-        state.currentUser = user;
-        setupHeader(user);
-
-        // 2. Load questions and last test in parallel
-        return Promise.all([loadQuestions(), fetchLastTest()]);
-      })
-      .then(function () {
-        if (!state.currentUser) return;
-
-        document.title           = state.meta.title || 'Survey';
-        els.title.textContent    = state.meta.title || 'Survey';
-        els.description.textContent = state.meta.description || '';
+        document.title              = 'Test d\'orientation';
+        els.title.textContent       = 'Test d\'orientation';
+        els.description.textContent = 'Répondez à quelques questions pour découvrir la formation qui vous correspond le mieux.';
 
         els.btnStart.addEventListener('click', function () {
           showView('question');
@@ -265,10 +256,9 @@
       })
       .catch(function (err) {
         document.body.innerHTML =
-          '<div style="padding:2rem;font-family:sans-serif;color:#b91c1c;max-width:480px;margin:2rem auto">' +
-          '<h2 style="margin-bottom:.75rem">Error</h2>' +
-          '<p>' + err.message + '</p>' +
-          '</div>';
+          '<div style="padding:2rem;color:#b91c1c;max-width:480px;margin:2rem auto">' +
+          '<h2 style="margin-bottom:.5rem">Erreur</h2>' +
+          '<p>' + err.message + '</p></div>';
       });
   }
 

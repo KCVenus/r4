@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#2563eb" />
-  <title>Sign in — Survey</title>
+  <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1e293b"  media="(prefers-color-scheme: dark)" />
+  <title>Connexion</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="auth-body">
@@ -13,13 +14,13 @@
     <div class="auth-logo">
       <span class="auth-logo-icon">◈</span>
     </div>
-    <h1 class="auth-title" id="auth-title">Sign in</h1>
+    <h1 class="auth-title" id="auth-title">Connexion</h1>
 
     <div id="auth-error" class="auth-error hidden"></div>
 
     <form id="auth-form" novalidate>
       <div class="field">
-        <label for="username">Username</label>
+        <label for="username">Nom d'utilisateur</label>
         <input
           id="username"
           name="username"
@@ -34,7 +35,7 @@
       </div>
 
       <div class="field">
-        <label for="password">Password</label>
+        <label for="password">Mot de passe</label>
         <input
           id="password"
           name="password"
@@ -46,13 +47,17 @@
       </div>
 
       <button type="submit" id="auth-submit" class="btn-primary auth-btn">
-        Sign in
+        Se connecter
       </button>
     </form>
 
     <p class="auth-toggle">
-      <span id="toggle-text">No account?</span>
-      <button id="toggle-btn" class="link-btn">Create one</button>
+      <span id="toggle-text">Pas encore de compte ?</span>
+      <button id="toggle-btn" class="link-btn">En créer un</button>
+    </p>
+
+    <p class="auth-toggle" style="margin-top:0">
+      <a href="index.html" class="link-btn">← Continuer sans compte</a>
     </p>
   </main>
 
@@ -70,8 +75,8 @@
       var form      = document.getElementById('auth-form');
       var passInput = document.getElementById('password');
 
-      // If already logged in, go to survey
-      fetch('api/auth.php', { credentials: 'include' })
+      // Déjà connecté → accueil
+      fetch('api/auth', { credentials: 'include' })
         .then(function (r) {
           if (r.ok) window.location.href = 'index.html';
         })
@@ -79,10 +84,10 @@
 
       function setMode(login) {
         isLogin = login;
-        titleEl.textContent   = login ? 'Sign in' : 'Create account';
-        submitEl.textContent  = login ? 'Sign in' : 'Register';
-        toggleTxt.textContent = login ? 'No account?' : 'Already registered?';
-        toggleBtn.textContent = login ? 'Create one' : 'Sign in';
+        titleEl.textContent   = login ? 'Connexion' : 'Créer un compte';
+        submitEl.textContent  = login ? 'Se connecter' : 'Créer le compte';
+        toggleTxt.textContent = login ? 'Pas encore de compte ?' : 'Déjà inscrit ?';
+        toggleBtn.textContent = login ? 'En créer un' : 'Se connecter';
         passInput.setAttribute('autocomplete', login ? 'current-password' : 'new-password');
         hideError();
       }
@@ -108,10 +113,10 @@
         var password = document.getElementById('password').value;
         var action   = isLogin ? 'login' : 'register';
 
-        submitEl.disabled = true;
-        submitEl.textContent = isLogin ? 'Signing in…' : 'Registering…';
+        submitEl.disabled    = true;
+        submitEl.textContent = isLogin ? 'Connexion…' : 'Création…';
 
-        fetch('api/auth.php', {
+        fetch('api/auth', {
           method:      'POST',
           credentials: 'include',
           headers:     { 'Content-Type': 'application/json' },
@@ -126,15 +131,15 @@
             if (result.ok) {
               window.location.href = 'index.html';
             } else {
-              showError(result.data.error || 'Something went wrong');
-              submitEl.disabled = false;
-              submitEl.textContent = isLogin ? 'Sign in' : 'Register';
+              showError(result.data.error || 'Une erreur est survenue');
+              submitEl.disabled    = false;
+              submitEl.textContent = isLogin ? 'Se connecter' : 'Créer le compte';
             }
           })
           .catch(function () {
-            showError('Network error — is the server running?');
-            submitEl.disabled = false;
-            submitEl.textContent = isLogin ? 'Sign in' : 'Register';
+            showError('Erreur réseau — le serveur est-il démarré ?');
+            submitEl.disabled    = false;
+            submitEl.textContent = isLogin ? 'Se connecter' : 'Créer le compte';
           });
       });
     })();

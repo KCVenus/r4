@@ -11,8 +11,9 @@ error_reporting(E_ALL);
  * Safe to re-run (uses INSERT IGNORE).
  */
 
-require_once __DIR__ . '/../api/config.php';
-require_once __DIR__ . '/../api/db.php';
+require_once __DIR__ . '/../app/Core/Database.php';
+
+use App\Core\Database;
 
 header('Content-Type: text/plain; charset=utf-8');
 
@@ -22,7 +23,7 @@ $defaults = [
 ];
 
 try {
-    $pdo = db();
+    $pdo = Database::getInstance();
 
     foreach ($defaults as $u) {
         $hash = password_hash($u['password'], PASSWORD_DEFAULT);
@@ -30,14 +31,14 @@ try {
             'INSERT IGNORE INTO users (username, password_hash, role) VALUES (?, ?, ?)'
         );
         $stmt->execute([$u['username'], $hash, $u['role']]);
-        $label = $stmt->rowCount() ? 'Created' : 'Already exists';
-        echo "{$label}: {$u['username']} (role: {$u['role']})\n";
+        $label = $stmt->rowCount() ? 'Créé' : 'Déjà existant';
+        echo "{$label} : {$u['username']} (rôle : {$u['role']})\n";
     }
 
-    echo "\nSetup complete. You can now log in at /login.html\n";
-    echo "Delete or protect this file after first use.\n";
+    echo "\nSetup terminé. Vous pouvez vous connecter sur /login.html\n";
+    echo "Supprimez ou protégez ce fichier après utilisation.\n";
 
-} catch (PDOException $e) {
-    echo "Error: " . $e->getMessage() . "\n";
-    echo "Make sure you imported schema.sql first and that config.php has the correct DB credentials.\n";
+} catch (\PDOException $e) {
+    echo "Erreur : " . $e->getMessage() . "\n";
+    echo "Assurez-vous d'avoir importé schema.sql et que config/config.php est correct.\n";
 }

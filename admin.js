@@ -5,7 +5,7 @@
   var btnLogout = document.getElementById('btn-logout');
 
   // ── Auth guard: must be admin ─────────────────────────────
-  fetch('api/auth.php', { credentials: 'include' })
+  fetch('api/auth', { credentials: 'include' })
     .then(function (r) {
       if (!r.ok) { window.location.href = 'login.html'; return null; }
       return r.json();
@@ -19,7 +19,7 @@
 
   // ── Logout ────────────────────────────────────────────────
   btnLogout.addEventListener('click', function () {
-    fetch('api/auth.php', {
+    fetch('api/auth', {
       method:      'POST',
       credentials: 'include',
       headers:     { 'Content-Type': 'application/json' },
@@ -31,7 +31,7 @@
 
   // ── Load & render stats ───────────────────────────────────
   function loadStats() {
-    fetch('api/stats.php', { credentials: 'include' })
+    fetch('api/stats', { credentials: 'include' })
       .then(function (r) {
         if (!r.ok) throw new Error('Failed to load stats');
         return r.json();
