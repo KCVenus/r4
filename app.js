@@ -148,6 +148,23 @@
         name.textContent = f.name;
         card.appendChild(name);
 
+        if (typeof f.percent !== 'undefined') {
+          var scoreWrap = document.createElement('div');
+          scoreWrap.className = 'formation-score';
+          var scoreBar = document.createElement('div');
+          scoreBar.className = 'formation-score-bar';
+          var scoreFill = document.createElement('div');
+          scoreFill.className = 'formation-score-fill';
+          scoreFill.style.width = f.percent + '%';
+          var scoreLabel = document.createElement('span');
+          scoreLabel.className = 'formation-score-label';
+          scoreLabel.textContent = f.percent + '% de compatibilité';
+          scoreBar.appendChild(scoreFill);
+          scoreWrap.appendChild(scoreBar);
+          scoreWrap.appendChild(scoreLabel);
+          card.appendChild(scoreWrap);
+        }
+
         if (f.description) {
           var desc = document.createElement('p');
           desc.className   = 'formation-desc';

@@ -71,8 +71,9 @@ class Formation
         }
 
         arsort($scores);
-        $topIds = array_keys(array_slice($scores, 0, 3, true));
-        $in     = implode(',', array_map('intval', $topIds));
+        $topIds  = array_keys(array_slice($scores, 0, 3, true));
+        $maxScore = max($scores) ?: 1;
+        $in      = implode(',', array_map('intval', $topIds));
 
         $formations = $pdo->query(
             "SELECT id, name, description, contact_email, contact_url
@@ -82,6 +83,12 @@ class Formation
 
         usort($formations, fn($a, $b) => ($scores[$b['id']] ?? 0) - ($scores[$a['id']] ?? 0));
 
-        return $formations;
+        return array_map(function ($f) use ($scores, $maxScore) {
+            $score = $scores[$f['id']] ?? 0;
+            return array_merge($f, [
+                'score'   => $score,
+                'percent' => (int) round(($score / $maxScore) * 100),
+            ]);
+        }, $formations);
     }
 }
