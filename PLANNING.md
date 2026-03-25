@@ -72,10 +72,10 @@
 ### Phase 2 — Fonctionnalités admin (1 semaine)
 > L'établissement peut gérer le contenu sans développeur
 
-- [ ] **F1** — CRUD questions dans le dashboard admin
-- [ ] **F2** — CRUD formations + tableau de scoring dans le dashboard admin
-- [ ] **F4** — Export CSV des réponses
-- [ ] **Q6** — Tableau de bord admin en français (déjà listé en Phase 0)
+- [x] **F1** — CRUD questions dans le dashboard admin
+- [x] **F2** — CRUD formations dans le dashboard admin
+- [x] **F4** — Export CSV des réponses
+- [x] **Q6** — Tableau de bord admin en français (déjà fait en Phase 0)
 
 ### Phase 3 — Expérience utilisateur (1 semaine)
 > Améliorer le parcours du visiteur
@@ -104,7 +104,7 @@
 |-------|--------------|--------|
 | Phase 0 — Correctifs immédiats | 1–2 jours | ✅ Terminé |
 | Phase 1 — Sécurisation | 3–5 jours | 🟡 En cours (B2, B9, B3/B5 restants) |
-| Phase 2 — Fonctionnalités admin | ~1 semaine | 🟠 À planifier |
+| Phase 2 — Fonctionnalités admin | ~1 semaine | ✅ Terminé |
 | Phase 3 — UX | ~1 semaine | 🟡 À planifier |
 | Phase 4 — Mise en production | 1–2 jours | ⚪ Bloqué par Phase 1 |
 

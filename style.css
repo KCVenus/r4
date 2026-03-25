@@ -828,3 +828,162 @@ section[id^="view-"].active {
     max-width: 640px;
   }
 }
+
+/* ── Onglets admin ────────────────────────────────────────────────────────── */
+.admin-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 var(--space-lg);
+  background: var(--color-surface);
+  border-bottom: 2px solid var(--color-border);
+  overflow-x: auto;
+}
+
+.tab-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.tab-btn:hover { color: var(--color-primary); }
+.tab-btn.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
+/* ── En-tête de section avec bouton ─────────────────────────────────────── */
+.admin-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+/* ── Bouton compact ──────────────────────────────────────────────────────── */
+.btn-sm {
+  display: inline-block;
+  width: auto;
+  min-height: 32px;
+  padding: 4px var(--space-md);
+  font-size: 0.875rem;
+}
+
+/* ── Bouton danger ───────────────────────────────────────────────────────── */
+.btn-danger {
+  display: inline-block;
+  width: auto;
+  min-height: 32px;
+  padding: 4px var(--space-md);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.btn-danger:hover { background: #b91c1c; }
+
+/* ── Item CRUD ───────────────────────────────────────────────────────────── */
+.crud-item {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.crud-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.crud-item-key {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-family: monospace;
+  background: #eff6ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.crud-item-text {
+  margin: var(--space-xs) 0 0;
+  font-size: 0.9375rem;
+}
+
+.crud-item-meta {
+  margin: var(--space-xs) 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.crud-item-actions {
+  display: flex;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+/* ── Badges statut ───────────────────────────────────────────────────────── */
+.crud-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-active   { background: #dcfce7; color: #166534; }
+.badge-inactive { background: #fee2e2; color: #991b1b; }
+
+/* ── Formulaire CRUD inline ──────────────────────────────────────────────── */
+.crud-form {
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.crud-form h3 {
+  margin: 0 0 var(--space-md);
+  font-size: 1rem;
+}
+
+.crud-form textarea {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.crud-form-actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+@media (prefers-color-scheme: dark) {
+  .crud-item-key { background: #1e3a5f; }
+  .user-table th { background: #1e293b; }
+  .badge-active   { background: #14532d; color: #86efac; }
+  .badge-inactive { background: #450a0a; color: #fca5a5; }
+}

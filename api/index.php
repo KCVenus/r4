@@ -25,18 +25,32 @@ require_once $base . '/Controllers/QuestionController.php';
 require_once $base . '/Controllers/RecommendController.php';
 require_once $base . '/Controllers/AnswerController.php';
 require_once $base . '/Controllers/StatsController.php';
+require_once $base . '/Controllers/AdminController.php';
 
 use App\Core\Response;
-use App\Controllers\{AuthController, QuestionController, RecommendController, AnswerController, StatsController};
+use App\Controllers\{AuthController, QuestionController, RecommendController, AnswerController, StatsController, AdminController};
 
 // ── Router ────────────────────────────────────────────────────────────────
 $method = $_SERVER['REQUEST_METHOD'];
 $route  = trim($_GET['_route'] ?? '', '/');
 
-// ── Vérification CSRF sur les routes POST sensibles ───────────────────────
-$csrfProtected = [['POST', 'auth'], ['POST', 'answers']];
+// ── Middleware admin ──────────────────────────────────────────────────────
+$adminRoutes = ['admin/questions', 'admin/formations', 'admin/export'];
+if (in_array($route, $adminRoutes, true)) {
+    if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+        Response::error('Accès refusé', 403);
+        exit;
+    }
+}
+
+// ── Vérification CSRF sur les routes POST/PUT/DELETE sensibles ────────────
+$csrfProtected = [
+    ['POST', 'auth'], ['POST', 'answers'],
+    ['POST', 'admin/questions'], ['PUT', 'admin/questions'], ['DELETE', 'admin/questions'],
+    ['POST', 'admin/formations'], ['PUT', 'admin/formations'], ['DELETE', 'admin/formations'],
+];
 if (in_array([$method, $route], $csrfProtected, true)) {
-    $clientToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    $clientToken  = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     $sessionToken = $_SESSION['csrf_token'] ?? '';
     if (!$clientToken || !$sessionToken || !hash_equals($sessionToken, $clientToken)) {
         Response::error('Token CSRF invalide', 403);
@@ -58,8 +72,17 @@ try {
         ['POST', 'recommend'] => (new RecommendController())->recommend(),
         ['GET',  'answers']   => (new AnswerController())->last(),
         ['POST', 'answers']   => (new AnswerController())->store(),
-        ['GET',  'stats']     => (new StatsController())->index(),
-        default               => Response::error('Route introuvable', 404),
+        ['GET',  'stats']               => (new StatsController())->index(),
+        ['GET',    'admin/questions']   => (new AdminController())->listQuestions(),
+        ['POST',   'admin/questions']   => (new AdminController())->createQuestion(),
+        ['PUT',    'admin/questions']   => (new AdminController())->updateQuestion(),
+        ['DELETE', 'admin/questions']   => (new AdminController())->deleteQuestion(),
+        ['GET',    'admin/formations']  => (new AdminController())->listFormations(),
+        ['POST',   'admin/formations']  => (new AdminController())->createFormation(),
+        ['PUT',    'admin/formations']  => (new AdminController())->updateFormation(),
+        ['DELETE', 'admin/formations']  => (new AdminController())->deleteFormation(),
+        ['GET',    'admin/export']      => (new AdminController())->exportCsv(),
+        default                         => Response::error('Route introuvable', 404),
     };
 } catch (\PDOException) {
     Response::error('Erreur base de données', 500);
