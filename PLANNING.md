@@ -35,15 +35,15 @@
 
 ### 🟡 Souhaitables (qualité / UX)
 
-| # | Besoin | Détail |
-|---|--------|--------|
-| Q1 | Page d'erreur 404 / 500 personnalisée | Actuellement pas de page d'erreur dédiée |
-| Q2 | Validation email à l'inscription | La colonne `email` existe en BDD mais n'est pas utilisée |
-| Q3 | Logging des erreurs PHP | `error_log` vers un fichier, pas `display_errors` |
-| Q4 | Supprimer `questions.json` | Obsolète (les questions sont en BDD), induit en erreur |
-| Q5 | Optimisation des index BDD | Vérifier les index sur `response_answers`, `survey_responses` |
-| Q6 | admin.html en français | Le dashboard est en anglais, le reste du site est en français |
-| Q7 | Script d'installation unique | Un seul fichier SQL complet : schema + migration + seed (dans l'ordre) |
+| # | Besoin | Détail | Statut |
+|---|--------|--------|--------|
+| Q1 | Page d'erreur 404 / 500 personnalisée | Actuellement pas de page d'erreur dédiée | ✅ |
+| Q2 | Validation email à l'inscription | La colonne `email` existe en BDD mais n'est pas utilisée | ✅ |
+| Q3 | Logging des erreurs PHP | `error_log` vers un fichier, pas `display_errors` | ✅ |
+| Q4 | Supprimer `questions.json` | Obsolète (les questions sont en BDD), induit en erreur | ✅ |
+| Q5 | Optimisation des index BDD | Vérifier les index sur `response_answers`, `survey_responses` | ✅ (index en place) |
+| Q6 | admin.html en français | Le dashboard est en anglais, le reste du site est en français | ✅ |
+| Q7 | Script d'installation unique | Un seul fichier SQL complet : schema + migration + seed (dans l'ordre) | ✅ |
 
 ---
 
@@ -63,11 +63,11 @@
 > Le site peut tourner, on le blinds
 
 - [x] **B1** — Variables d'environnement (`.env` + lecture dans `config.php`)
-- [ ] **B2** — Mot de passe DB en prod
+- [ ] **B2** — Mot de passe DB en prod (action serveur — voir INSTALL.md)
 - [x] **B7** — Token CSRF (génération côté session, vérification sur POST)
 - [x] **B8** — Rate limiting simple sur `/api/auth` (compteur en session)
-- [ ] **B9** — Redirect HTTPS dans `.htaccess` (décommenter en production)
-- [ ] **B3 + B5** — Procédure d'installation documentée (changer les mdp, supprimer setup.php)
+- [ ] **B9** — Redirect HTTPS dans `.htaccess` (décommenter en production — voir INSTALL.md)
+- [x] **B3 + B5** — Procédure d'installation documentée (INSTALL.md)
 
 ### Phase 2 — Fonctionnalités admin (1 semaine)
 > L'établissement peut gérer le contenu sans développeur
@@ -103,7 +103,7 @@
 | Phase | Durée estimée | Statut |
 |-------|--------------|--------|
 | Phase 0 — Correctifs immédiats | 1–2 jours | ✅ Terminé |
-| Phase 1 — Sécurisation | 3–5 jours | 🟡 En cours (B2, B9, B3/B5 restants) |
+| Phase 1 — Sécurisation | 3–5 jours | 🟡 En cours (B2 et B9 = actions serveur prod) |
 | Phase 2 — Fonctionnalités admin | ~1 semaine | ✅ Terminé |
 | Phase 3 — UX | ~1 semaine | 🟡 En cours (F3/F6 attendent SMTP) |
 | Phase 4 — Mise en production | 1–2 jours | ⚪ Bloqué par Phase 1 |
