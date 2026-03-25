@@ -1,8 +1,9 @@
 (function () {
   'use strict';
 
-  var content  = document.getElementById('admin-content');
+  var content   = document.getElementById('admin-content');
   var btnLogout = document.getElementById('btn-logout');
+  var csrfToken = '';
 
   // ── Auth guard: must be admin ─────────────────────────────
   fetch('api/auth', { credentials: 'include' })
@@ -13,27 +14,35 @@
     .then(function (user) {
       if (!user) return;
       if (user.role !== 'admin') { window.location.href = 'index.html'; return; }
+      return fetch('api/csrf', { credentials: 'include' });
+    })
+    .then(function (r) {
+      if (!r) return;
+      return r.ok ? r.json() : null;
+    })
+    .then(function (data) {
+      if (data) csrfToken = data.token;
       loadStats();
     })
     .catch(function () { window.location.href = 'login.html'; });
 
-  // ── Logout ────────────────────────────────────────────────
+  // ── Déconnexion ───────────────────────────────────────────
   btnLogout.addEventListener('click', function () {
     fetch('api/auth', {
       method:      'POST',
       credentials: 'include',
-      headers:     { 'Content-Type': 'application/json' },
+      headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
       body:        JSON.stringify({ action: 'logout' }),
     }).finally(function () {
       window.location.href = 'login.html';
     });
   });
 
-  // ── Load & render stats ───────────────────────────────────
+  // ── Chargement des statistiques ───────────────────────────
   function loadStats() {
     fetch('api/stats', { credentials: 'include' })
       .then(function (r) {
-        if (!r.ok) throw new Error('Failed to load stats');
+        if (!r.ok) throw new Error('Erreur lors du chargement des statistiques');
         return r.json();
       })
       .then(render)
@@ -45,28 +54,28 @@
   function render(data) {
     var html = '';
 
-    // ── Totals cards ────────────────────────────────────────
+    // ── Cartes totaux ────────────────────────────────────────
     html += '<section class="admin-section">';
     html += '<div class="stat-cards">';
-    html += statCard('Users', data.totals.total_users, '👤');
-    html += statCard('Responses', data.totals.total_responses, '📋');
+    html += statCard('Utilisateurs', data.totals.total_users, '👤');
+    html += statCard('Réponses', data.totals.total_responses, '📋');
     html += '</div></section>';
 
-    // ── Per-question distribution ────────────────────────────
+    // ── Distribution par question ────────────────────────────
     if (data.distribution.length > 0) {
       html += '<section class="admin-section">';
-      html += '<h2 class="admin-section-title">Question Results</h2>';
+      html += '<h2 class="admin-section-title">Résultats par question</h2>';
       data.distribution.forEach(function (q) {
         html += renderQuestionCard(q);
       });
       html += '</section>';
     } else {
-      html += '<section class="admin-section"><p class="muted">No responses yet.</p></section>';
+      html += '<section class="admin-section"><p class="muted">Aucune réponse pour l\'instant.</p></section>';
     }
 
-    // ── User table ───────────────────────────────────────────
+    // ── Tableau utilisateurs ─────────────────────────────────
     html += '<section class="admin-section">';
-    html += '<h2 class="admin-section-title">User Responses</h2>';
+    html += '<h2 class="admin-section-title">Réponses par utilisateur</h2>';
     html += renderUserTable(data.users, data.distribution);
     html += '</section>';
 
@@ -107,17 +116,16 @@
   }
 
   function renderUserTable(users, distribution) {
-    // Build ordered list of question keys for column headers
     var questionKeys  = distribution.map(function (q) { return q.question_key; });
     var questionTexts = {};
     distribution.forEach(function (q) { questionTexts[q.question_key] = q.question_text; });
 
     var html = '<div class="table-wrap"><table class="user-table">';
     html += '<thead><tr>';
-    html += '<th>User</th>';
-    html += '<th>Role</th>';
-    html += '<th>Joined</th>';
-    html += '<th>Last survey</th>';
+    html += '<th>Utilisateur</th>';
+    html += '<th>Rôle</th>';
+    html += '<th>Inscription</th>';
+    html += '<th>Dernier test</th>';
 
     questionKeys.forEach(function (k) {
       html += '<th class="q-col" title="' + escHtml(questionTexts[k]) + '">' + escHtml(k) + '</th>';
@@ -125,7 +133,6 @@
     html += '</tr></thead><tbody>';
 
     users.forEach(function (user) {
-      // Build answer lookup for this user
       var ansMap = {};
       user.answers.forEach(function (a) { ansMap[a.question_key] = a.chosen_label; });
 
@@ -146,7 +153,7 @@
     return html;
   }
 
-  // ── Helpers ───────────────────────────────────────────────
+  // ── Utilitaires ───────────────────────────────────────────
   function escHtml(str) {
     return String(str)
       .replace(/&/g, '&amp;')
@@ -158,6 +165,6 @@
   function formatDate(str) {
     if (!str) return '—';
     var d = new Date(str);
-    return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 })();

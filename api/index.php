@@ -1,6 +1,14 @@
 <?php
 ini_set('display_errors', 0);
 error_reporting(0);
+
+// ── Flags de sécurité session ─────────────────────────────────────────────
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_samesite', 'Lax');
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    ini_set('session.cookie_secure', 1);
+}
+
 header('Content-Type: application/json');
 session_start();
 
@@ -25,8 +33,25 @@ use App\Controllers\{AuthController, QuestionController, RecommendController, An
 $method = $_SERVER['REQUEST_METHOD'];
 $route  = trim($_GET['_route'] ?? '', '/');
 
+// ── Vérification CSRF sur les routes POST sensibles ───────────────────────
+$csrfProtected = [['POST', 'auth'], ['POST', 'answers']];
+if (in_array([$method, $route], $csrfProtected, true)) {
+    $clientToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    $sessionToken = $_SESSION['csrf_token'] ?? '';
+    if (!$clientToken || !$sessionToken || !hash_equals($sessionToken, $clientToken)) {
+        Response::error('Token CSRF invalide', 403);
+        exit;
+    }
+}
+
 try {
     match ([$method, $route]) {
+        ['GET',  'csrf']      => (function () {
+            if (empty($_SESSION['csrf_token'])) {
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            }
+            Response::json(['token' => $_SESSION['csrf_token']]);
+        })(),
         ['GET',  'auth']      => (new AuthController())->me(),
         ['POST', 'auth']      => (new AuthController())->handle(),
         ['GET',  'questions'] => (new QuestionController())->index(),
