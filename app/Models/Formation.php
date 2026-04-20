@@ -3,8 +3,20 @@ namespace App\Models;
 
 use App\Core\Database;
 
+/**
+ * Formation model — CRUD + the scoring/recommendation engine.
+ *
+ * A "formation" is a training program the user can be matched against.
+ * Recommendations rely on the `formation_scores` pivot table, which maps
+ * (option_id -> formation_id) with a point value.
+ */
 class Formation
 {
+    /**
+     * Fetch every formation, active or not, for the admin list.
+     *
+     * @return array Rows ordered by insertion (id).
+     */
     public static function getAll(): array
     {
         return Database::getInstance()->query(
@@ -14,6 +26,15 @@ class Formation
         )->fetchAll();
     }
 
+    /**
+     * Insert a new formation. Active by default in the DB schema.
+     *
+     * @param string      $name  Display name.
+     * @param string|null $desc  Optional long description.
+     * @param string|null $email Optional contact email.
+     * @param string|null $url   Optional landing-page URL.
+     * @return int               Auto-increment id of the new row.
+     */
     public static function create(string $name, ?string $desc, ?string $email, ?string $url): int
     {
         $pdo = Database::getInstance();
@@ -23,6 +44,16 @@ class Formation
         return (int) $pdo->lastInsertId();
     }
 
+    /**
+     * Update every editable field of a formation at once.
+     *
+     * @param int         $id     Formation id.
+     * @param string      $name   New name.
+     * @param string|null $desc   New description (null allowed).
+     * @param string|null $email  New contact email (null allowed).
+     * @param string|null $url    New contact URL (null allowed).
+     * @param bool        $active Visibility flag.
+     */
     public static function update(int $id, string $name, ?string $desc, ?string $email, ?string $url, bool $active): void
     {
         Database::getInstance()->prepare(
@@ -30,6 +61,11 @@ class Formation
         )->execute([$name, $desc, $email, $url, $active ? 1 : 0, $id]);
     }
 
+    /**
+     * Hard-delete a formation. Associated scores are removed via CASCADE.
+     *
+     * @param int $id Formation id.
+     */
     public static function deleteById(int $id): void
     {
         Database::getInstance()
@@ -37,12 +73,30 @@ class Formation
             ->execute([$id]);
     }
 
+    /**
+     * Compute the top 3 formations matching the given answers.
+     *
+     * Scoring algorithm:
+     *   1. For each (question_key, chosen_value), look up every formation that
+     *      scores points on that option via the formation_scores pivot.
+     *   2. Sum points per formation id.
+     *   3. Sort descending, keep the top 3, compute a normalised percent
+     *      against the best score so the top card always shows 100%.
+     *
+     * Fallback: if no answer yields any points (e.g. brand-new dataset),
+     * return the first 3 active formations so the user is never shown an
+     * empty result screen.
+     *
+     * @param array $answers Array of {question_key, chosen_value, ...}.
+     * @return array         Up to 3 formations with `score` and `percent` fields.
+     */
     public static function recommend(array $answers): array
     {
         $pdo    = Database::getInstance();
         $scores = [];
 
-        $stmt = $pdo->prepare(
+        // Prepared once, executed per answer — avoids re-parsing the SQL in the loop.
+        $scoreStmt = $pdo->prepare(
             'SELECT fs.formation_id, fs.points
              FROM   formation_scores  fs
              JOIN   question_options  qo ON qo.id  = fs.option_id
@@ -52,17 +106,20 @@ class Formation
         );
 
         foreach ($answers as $answer) {
-            $key   = $answer['question_key'] ?? '';
-            $value = $answer['chosen_value']  ?? '';
-            if (!$key || !$value) continue;
+            $questionKey = $answer['question_key'] ?? '';
+            $chosenValue = $answer['chosen_value']  ?? '';
+            // Skip malformed entries silently — the public /recommend endpoint
+            // accepts guest submissions so we must tolerate noisy payloads.
+            if (!$questionKey || !$chosenValue) continue;
 
-            $stmt->execute([$key, $value]);
-            foreach ($stmt->fetchAll() as $row) {
-                $fid          = (int) $row['formation_id'];
-                $scores[$fid] = ($scores[$fid] ?? 0) + (int) $row['points'];
+            $scoreStmt->execute([$questionKey, $chosenValue]);
+            foreach ($scoreStmt->fetchAll() as $row) {
+                $formationId          = (int) $row['formation_id'];
+                $scores[$formationId] = ($scores[$formationId] ?? 0) + (int) $row['points'];
             }
         }
 
+        // No matches at all -> return a sensible default set rather than an empty screen.
         if (empty($scores)) {
             return $pdo->query(
                 'SELECT id, name, description, contact_email, contact_url
@@ -71,21 +128,25 @@ class Formation
         }
 
         arsort($scores);
-        $topIds  = array_keys(array_slice($scores, 0, 3, true));
+        $topIds   = array_keys(array_slice($scores, 0, 3, true));
         $maxScore = max($scores) ?: 1;
-        $in      = implode(',', array_map('intval', $topIds));
+        // Safe because $topIds originates from DB-controlled integer keys,
+        // but we still cast through intval to defend against edge cases.
+        $idList   = implode(',', array_map('intval', $topIds));
 
         $formations = $pdo->query(
             "SELECT id, name, description, contact_email, contact_url
              FROM   formations
-             WHERE  id IN ($in) AND active = 1"
+             WHERE  id IN ($idList) AND active = 1"
         )->fetchAll();
 
+        // MySQL returned rows in PK order; re-sort by score so the best match comes first.
         usort($formations, fn($a, $b) => ($scores[$b['id']] ?? 0) - ($scores[$a['id']] ?? 0));
 
-        return array_map(function ($f) use ($scores, $maxScore) {
-            $score = $scores[$f['id']] ?? 0;
-            return array_merge($f, [
+        // Attach raw score + percentage (relative to best) for the UI progress bar.
+        return array_map(function ($formation) use ($scores, $maxScore) {
+            $score = $scores[$formation['id']] ?? 0;
+            return array_merge($formation, [
                 'score'   => $score,
                 'percent' => (int) round(($score / $maxScore) * 100),
             ]);
