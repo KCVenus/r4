@@ -1,0 +1,48 @@
+name: Exigence / Fonctionnalite
+description: Nouvelle exigence (B/F/Q) ou demande d'evolution
+title: "[ID] "
+labels: []
+body:
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priorite
+      options:
+        - "Bloquant (B) — empeche la mise en prod"
+        - "Important (F) — attendu mais non bloquant"
+        - "Nice-to-have (Q) — qualite / UX"
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase cible
+      options:
+        - "Phase 0 — Correctifs immediats"
+        - "Phase 1 — Securisation"
+        - "Phase 2 — Fonctionnalites admin"
+        - "Phase 3 — UX"
+        - "Phase 4 — Mise en production"
+    validations:
+      required: true
+  - type: textarea
+    id: need
+    attributes:
+      label: Besoin / Probleme
+      description: Que doit-on resoudre ? Pour qui ?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criteres d'acceptation
+      placeholder: |
+        - [ ] Critere 1
+        - [ ] Critere 2
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes techniques
+      description: Implementation envisagee, dependances, risques

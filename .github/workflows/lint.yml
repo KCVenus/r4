@@ -1,0 +1,47 @@
+name: Lint
+
+on:
+  push:
+    branches: [master, preprod]
+  pull_request:
+    branches: [master, preprod]
+
+jobs:
+  php-lint:
+    name: PHP syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Lint PHP files
+        run: |
+          find . -type f -name "*.php" -not -path "./vendor/*" -print0 \
+            | xargs -0 -n1 -P4 php -l
+
+  html-css-check:
+    name: HTML / CSS sanity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check no display_errors left on
+        run: |
+          if grep -rn "display_errors.*=.*1" --include="*.php" .; then
+            echo "display_errors=1 trouve — interdit en prod"
+            exit 1
+          fi
+
+      - name: Check no var_dump / console.log
+        run: |
+          found=0
+          if grep -rn "var_dump\s*(" --include="*.php" . ; then found=1; fi
+          if grep -rn "console\.log" --include="*.js" --exclude-dir=node_modules . ; then found=1; fi
+          if [ $found -eq 1 ]; then
+            echo "Debug statements trouves"
+            exit 1
+          fi
