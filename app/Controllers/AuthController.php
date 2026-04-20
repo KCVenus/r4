@@ -79,6 +79,7 @@ class AuthController
     {
         $username = trim($body['username'] ?? '');
         $password = $body['password']      ?? '';
+        $email    = trim($body['email']    ?? '') ?: null;
 
         if (!preg_match('/^[a-zA-Z0-9_]{3,50}$/', $username)) {
             Response::error('Nom d\'utilisateur invalide (3-50 car. : lettres, chiffres, _)');
@@ -88,8 +89,12 @@ class AuthController
             Response::error('Mot de passe trop court (4 caractères minimum)');
         }
 
+        if ($email !== null && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Response::error('Adresse email invalide');
+        }
+
         try {
-            $userId = User::create($username, password_hash($password, PASSWORD_DEFAULT));
+            $userId = User::create($username, password_hash($password, PASSWORD_DEFAULT), $email);
         } catch (\PDOException $e) {
             if ($e->getCode() === '23000') {
                 Response::error('Nom d\'utilisateur déjà pris', 409);

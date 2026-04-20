@@ -34,6 +34,16 @@
         />
       </div>
 
+      <div class="field" id="email-field" style="display:none">
+        <label for="email">Email <span class="field-optional">(facultatif)</span></label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="email"
+        />
+      </div>
+
       <div class="field">
         <label for="password">Mot de passe</label>
         <input
@@ -96,6 +106,7 @@
         toggleTxt.textContent = login ? 'Pas encore de compte ?' : 'Déjà inscrit ?';
         toggleBtn.textContent = login ? 'En créer un' : 'Se connecter';
         passInput.setAttribute('autocomplete', login ? 'current-password' : 'new-password');
+        document.getElementById('email-field').style.display = login ? 'none' : '';
         hideError();
       }
 
@@ -118,6 +129,7 @@
 
         var username = document.getElementById('username').value.trim();
         var password = document.getElementById('password').value;
+        var email    = document.getElementById('email').value.trim() || null;
         var action   = isLogin ? 'login' : 'register';
 
         submitEl.disabled    = true;
@@ -127,7 +139,7 @@
           method:      'POST',
           credentials: 'include',
           headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-          body:        JSON.stringify({ action: action, username: username, password: password }),
+          body:        JSON.stringify({ action: action, username: username, password: password, email: email }),
         })
           .then(function (r) {
             return r.json().then(function (data) {

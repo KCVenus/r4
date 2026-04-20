@@ -14,12 +14,12 @@ class User
         return $stmt->fetch();
     }
 
-    public static function create(string $username, string $passwordHash): int
+    public static function create(string $username, string $passwordHash, ?string $email = null): int
     {
         $pdo = Database::getInstance();
         $pdo->prepare(
-            'INSERT INTO users (username, password_hash, role) VALUES (?, ?, "user")'
-        )->execute([$username, $passwordHash]);
+            'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, "user")'
+        )->execute([$username, $email, $passwordHash]);
 
         return (int) $pdo->lastInsertId();
     }
