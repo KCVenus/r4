@@ -1,9 +1,13 @@
 <?php
+// Production posture: hide errors from clients, log them server-side instead.
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
 
-// ── Flags de sécurité session ─────────────────────────────────────────────
+// ── Session security flags ────────────────────────────────────────────────
+// HttpOnly: block JS access to the session cookie (defense against XSS).
+// SameSite=Lax: send the cookie on top-level GETs but block CSRF from POSTs.
+// Secure: only set when running over HTTPS so local dev over HTTP still works.
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_samesite', 'Lax');
 if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
@@ -13,7 +17,8 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
 header('Content-Type: application/json');
 session_start();
 
-// ── Autoload ──────────────────────────────────────────────────────────────
+// ── Manual autoloader — no composer in this project ───────────────────────
+// Everything lives under /app; controllers depend on models which depend on core.
 $base = __DIR__ . '/../app';
 require_once $base . '/Core/Database.php';
 require_once $base . '/Core/Response.php';
@@ -32,10 +37,13 @@ use App\Core\Response;
 use App\Controllers\{AuthController, QuestionController, RecommendController, AnswerController, StatsController, AdminController};
 
 // ── Router ────────────────────────────────────────────────────────────────
+// `_route` is the path rewritten by api/.htaccess (see RewriteRule there).
 $method = $_SERVER['REQUEST_METHOD'];
 $route  = trim($_GET['_route'] ?? '', '/');
 
-// ── Middleware admin ──────────────────────────────────────────────────────
+// ── Admin middleware ──────────────────────────────────────────────────────
+// Protect the /admin/* routes early, before any controller instantiation.
+// StatsController has its own requireAdmin() call because /stats isn't under /admin.
 $adminRoutes = ['admin/questions', 'admin/formations', 'admin/export'];
 if (in_array($route, $adminRoutes, true)) {
     if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
@@ -44,7 +52,9 @@ if (in_array($route, $adminRoutes, true)) {
     }
 }
 
-// ── Vérification CSRF sur les routes POST/PUT/DELETE sensibles ────────────
+// ── CSRF guard on state-changing routes ───────────────────────────────────
+// Every mutating endpoint (except /auth logout which is harmless) must present
+// the token the client received from GET /csrf. hash_equals is timing-safe.
 $csrfProtected = [
     ['POST', 'auth'], ['POST', 'answers'],
     ['POST', 'admin/questions'], ['PUT', 'admin/questions'], ['DELETE', 'admin/questions'],
@@ -60,8 +70,10 @@ if (in_array([$method, $route], $csrfProtected, true)) {
 }
 
 try {
+    // Dispatch based on (method, route). Unknown tuples fall through to 404.
     match ([$method, $route]) {
         ['GET',  'csrf']      => (function () {
+            // Lazily create the token on first read; reused across the whole session.
             if (empty($_SESSION['csrf_token'])) {
                 $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
             }
@@ -86,6 +98,7 @@ try {
         default                         => Response::error('Route introuvable', 404),
     };
 } catch (\PDOException) {
+    // Distinct status text for DB failures to help ops distinguish them in logs.
     Response::error('Erreur base de données', 500);
 } catch (\Throwable) {
     Response::error('Erreur serveur', 500);

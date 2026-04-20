@@ -1,26 +1,40 @@
+/**
+ * admin.js — dashboard frontend for /admin.html.
+ *
+ * Responsibilities:
+ *   - Guard the page: redirect non-admins immediately.
+ *   - Render four tabs: stats, questions, formations, export.
+ *   - Provide CRUD UI for questions and formations via the /api/admin endpoints.
+ *
+ * All mutating requests include the CSRF token in the X-CSRF-Token header —
+ * see api/index.php for the server-side verification.
+ */
 (function () {
   'use strict';
 
-  var content   = document.getElementById('admin-content');
-  var tabsNav   = document.getElementById('admin-tabs');
-  var btnLogout = document.getElementById('btn-logout');
-  var csrfToken = '';
-  var activeTab = 'stats';
+  var contentRoot = document.getElementById('admin-content');
+  var tabsNav     = document.getElementById('admin-tabs');
+  var btnLogout   = document.getElementById('btn-logout');
+  var csrfToken   = '';
+  var activeTab   = 'stats';
 
   // ── Auth guard + init ─────────────────────────────────────
+  // Sequential promise chain: check auth, verify admin role, then load CSRF + initial tab.
+  // Any failure anywhere falls through to the catch and redirects to /login.html.
   fetch('api/auth', { credentials: 'include' })
-    .then(function (r) {
-      if (!r.ok) { window.location.href = 'login.html'; return null; }
-      return r.json();
+    .then(function (response) {
+      if (!response.ok) { window.location.href = 'login.html'; return null; }
+      return response.json();
     })
     .then(function (user) {
       if (!user) return;
+      // Non-admin logged-in users are bounced back to the main questionnaire.
       if (user.role !== 'admin') { window.location.href = 'index.html'; return; }
       return fetch('api/csrf', { credentials: 'include' });
     })
-    .then(function (r) {
-      if (!r) return;
-      return r.ok ? r.json() : null;
+    .then(function (response) {
+      if (!response) return;
+      return response.ok ? response.json() : null;
     })
     .then(function (data) {
       if (data) csrfToken = data.token;
@@ -29,7 +43,7 @@
     })
     .catch(function () { window.location.href = 'login.html'; });
 
-  // ── Déconnexion ───────────────────────────────────────────
+  // ── Logout ────────────────────────────────────────────────
   btnLogout.addEventListener('click', function () {
     fetch('api/auth', {
       method:      'POST',
@@ -39,11 +53,13 @@
     }).finally(function () { window.location.href = 'login.html'; });
   });
 
-  // ── Navigation par onglets ────────────────────────────────
+  /**
+   * Wire up the tab bar: clicking a tab updates `activeTab` and re-renders.
+   */
   function setupTabs() {
     tabsNav.querySelectorAll('.tab-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        tabsNav.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+        tabsNav.querySelectorAll('.tab-btn').forEach(function (other) { other.classList.remove('active'); });
         btn.classList.add('active');
         activeTab = btn.dataset.tab;
         loadTab(activeTab);
@@ -51,8 +67,13 @@
     });
   }
 
+  /**
+   * Dispatch to the loader of the requested tab and show a transient spinner.
+   *
+   * @param {'stats'|'questions'|'formations'|'export'} tab Tab id.
+   */
   function loadTab(tab) {
-    content.innerHTML = '<div class="admin-loading">Chargement…</div>';
+    contentRoot.innerHTML = '<div class="admin-loading">Chargement…</div>';
     switch (tab) {
       case 'stats':      loadStats();      break;
       case 'questions':  loadQuestions();  break;
@@ -62,21 +83,29 @@
   }
 
   // ═══════════════════════════════════════════════════════════
-  // ONGLET STATISTIQUES
+  // STATS TAB
   // ═══════════════════════════════════════════════════════════
 
+  /**
+   * Fetch the aggregated stats payload and delegate rendering.
+   */
   function loadStats() {
     fetch('api/stats', { credentials: 'include' })
-      .then(function (r) {
-        if (!r.ok) throw new Error('Erreur lors du chargement des statistiques');
-        return r.json();
+      .then(function (response) {
+        if (!response.ok) throw new Error('Erreur lors du chargement des statistiques');
+        return response.json();
       })
       .then(renderStats)
       .catch(function (err) {
-        content.innerHTML = '<p class="admin-error">' + escHtml(err.message) + '</p>';
+        contentRoot.innerHTML = '<p class="admin-error">' + escapeHtml(err.message) + '</p>';
       });
   }
 
+  /**
+   * Build the full stats HTML from the payload returned by /api/stats.
+   *
+   * @param {object} data Payload with totals, distribution[], users[].
+   */
   function renderStats(data) {
     var html = '';
 
@@ -88,7 +117,7 @@
     if (data.distribution.length > 0) {
       html += '<section class="admin-section">';
       html += '<h2 class="admin-section-title">Résultats par question</h2>';
-      data.distribution.forEach(function (q) { html += renderQuestionCard(q); });
+      data.distribution.forEach(function (question) { html += renderQuestionCard(question); });
       html += '</section>';
     } else {
       html += '<section class="admin-section"><p class="muted">Aucune réponse pour l\'instant.</p></section>';
@@ -99,27 +128,53 @@
     html += renderUserTable(data.users, data.distribution);
     html += '</section>';
 
-    content.innerHTML = html;
+    contentRoot.innerHTML = html;
   }
 
+  /**
+   * Build a single "big number" card markup string.
+   *
+   * @param {string} label Description shown below the number.
+   * @param {number} value The number to display.
+   * @param {string} icon  Emoji or glyph.
+   * @returns {string}     HTML string.
+   */
   function statCard(label, value, icon) {
     return '<div class="stat-card"><span class="stat-card-icon">' + icon + '</span>' +
            '<span class="stat-card-value">' + value + '</span>' +
            '<span class="stat-card-label">' + label + '</span></div>';
   }
 
-  function renderQuestionCard(q) {
-    var total = q.options.reduce(function (s, o) { return s + o.count; }, 0);
-    var html = '<div class="q-card"><p class="q-card-text">' + escHtml(q.question_text) + '</p><div class="q-bars">';
-    q.options.forEach(function (opt) {
+  /**
+   * Render the per-question bar chart card.
+   * Percentages are computed client-side against the sum of all counts.
+   *
+   * @param {object} question Entry from data.distribution.
+   * @returns {string}        HTML string.
+   */
+  function renderQuestionCard(question) {
+    var total = question.options.reduce(function (sum, opt) { return sum + opt.count; }, 0);
+    var html  = '<div class="q-card"><p class="q-card-text">' + escapeHtml(question.question_text) + '</p><div class="q-bars">';
+    question.options.forEach(function (opt) {
       var pct = total > 0 ? Math.round((opt.count / total) * 100) : 0;
-      html += '<div class="q-bar-row"><span class="q-bar-label">' + escHtml(opt.label) + '</span>' +
+      html += '<div class="q-bar-row"><span class="q-bar-label">' + escapeHtml(opt.label) + '</span>' +
               '<div class="q-bar-track"><div class="q-bar-fill" style="width:' + pct + '%"></div></div>' +
               '<span class="q-bar-count">' + opt.count + ' <span class="muted">(' + pct + '%)</span></span></div>';
     });
     return html + '</div></div>';
   }
 
+  /**
+   * Render the big "answers per user" table.
+   *
+   * Column layout: user / role / signup / last run + one column per question.
+   * Questions columns come from the distribution (keeps the column set
+   * consistent even for users with zero or partial answers).
+   *
+   * @param {Array<object>} users        List of users with their latest answers.
+   * @param {Array<object>} distribution Used only to build the column headers.
+   * @returns {string}                   HTML string.
+   */
   function renderUserTable(users, distribution) {
     var questionKeys  = distribution.map(function (q) { return q.question_key; });
     var questionTexts = {};
@@ -127,21 +182,22 @@
 
     var html = '<div class="table-wrap"><table class="user-table"><thead><tr>';
     html += '<th>Utilisateur</th><th>Rôle</th><th>Inscription</th><th>Dernier test</th>';
-    questionKeys.forEach(function (k) {
-      html += '<th class="q-col" title="' + escHtml(questionTexts[k]) + '">' + escHtml(k) + '</th>';
+    questionKeys.forEach(function (key) {
+      html += '<th class="q-col" title="' + escapeHtml(questionTexts[key]) + '">' + escapeHtml(key) + '</th>';
     });
     html += '</tr></thead><tbody>';
 
     users.forEach(function (user) {
-      var ansMap = {};
-      user.answers.forEach(function (a) { ansMap[a.question_key] = a.chosen_label; });
-      html += '<tr><td><strong>' + escHtml(user.username) + '</strong></td>' +
+      // Turn the flat answers list into a key->label map for O(1) lookup per column.
+      var answerByKey = {};
+      user.answers.forEach(function (answer) { answerByKey[answer.question_key] = answer.chosen_label; });
+      html += '<tr><td><strong>' + escapeHtml(user.username) + '</strong></td>' +
               '<td><span class="role-badge role-' + user.role + '">' + user.role + '</span></td>' +
               '<td class="muted">' + formatDate(user.created_at) + '</td>' +
               '<td class="muted">' + (user.completed_at ? formatDate(user.completed_at) : '—') + '</td>';
-      questionKeys.forEach(function (k) {
-        var ans = ansMap[k];
-        html += '<td>' + (ans ? '<span class="answer-chip">' + escHtml(ans) + '</span>' : '<span class="muted">—</span>') + '</td>';
+      questionKeys.forEach(function (key) {
+        var answer = answerByKey[key];
+        html += '<td>' + (answer ? '<span class="answer-chip">' + escapeHtml(answer) + '</span>' : '<span class="muted">—</span>') + '</td>';
       });
       html += '</tr>';
     });
@@ -150,16 +206,24 @@
   }
 
   // ═══════════════════════════════════════════════════════════
-  // ONGLET QUESTIONS
+  // QUESTIONS TAB
   // ═══════════════════════════════════════════════════════════
 
+  /**
+   * Fetch the full question list for the admin (active + inactive).
+   */
   function loadQuestions() {
     fetch('api/admin/questions', { credentials: 'include' })
-      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (response) { if (!response.ok) throw new Error(); return response.json(); })
       .then(renderQuestions)
-      .catch(function () { content.innerHTML = '<p class="admin-error">Erreur lors du chargement des questions.</p>'; });
+      .catch(function () { contentRoot.innerHTML = '<p class="admin-error">Erreur lors du chargement des questions.</p>'; });
   }
 
+  /**
+   * Render the questions CRUD list and wire up edit/delete/add buttons.
+   *
+   * @param {object} data Payload with a `questions` array.
+   */
   function renderQuestions(data) {
     var html = '<section class="admin-section">';
     html += '<div class="admin-section-header">';
@@ -168,26 +232,27 @@
     html += '</div>';
     html += '<div id="question-form-area"></div>';
 
-    data.questions.forEach(function (q) {
-      html += '<div class="crud-item" id="q-item-' + q.id + '">';
+    data.questions.forEach(function (question) {
+      html += '<div class="crud-item" id="q-item-' + question.id + '">';
       html += '<div class="crud-item-header">';
       html += '<div>';
-      html += '<span class="crud-item-key">' + escHtml(q.question_key) + '</span> ';
-      html += '<span class="crud-badge ' + (q.active ? 'badge-active' : 'badge-inactive') + '">' +
-              (q.active ? 'Actif' : 'Inactif') + '</span>';
-      html += '<p class="crud-item-text">' + escHtml(q.text) + '</p>';
-      var optLabels = q.options.map(function (o) { return escHtml(o.label); }).join(' / ');
-      html += '<p class="crud-item-meta">Options : ' + optLabels + '</p>';
+      html += '<span class="crud-item-key">' + escapeHtml(question.question_key) + '</span> ';
+      html += '<span class="crud-badge ' + (question.active ? 'badge-active' : 'badge-inactive') + '">' +
+              (question.active ? 'Actif' : 'Inactif') + '</span>';
+      html += '<p class="crud-item-text">' + escapeHtml(question.text) + '</p>';
+      var optionLabels = question.options.map(function (o) { return escapeHtml(o.label); }).join(' / ');
+      html += '<p class="crud-item-meta">Options : ' + optionLabels + '</p>';
       html += '</div>';
       html += '<div class="crud-item-actions">';
-      html += '<button class="btn-secondary btn-sm btn-edit-question" data-id="' + q.id + '" ' +
-              'data-text="' + escHtml(q.text) + '" data-sort="' + q.sort_order + '" data-active="' + q.active + '">Modifier</button>';
-      html += '<button class="btn-danger btn-sm btn-delete-question" data-id="' + q.id + '">Supprimer</button>';
+      // Serialise the question into data-* attrs so the edit handler needs no extra fetch.
+      html += '<button class="btn-secondary btn-sm btn-edit-question" data-id="' + question.id + '" ' +
+              'data-text="' + escapeHtml(question.text) + '" data-sort="' + question.sort_order + '" data-active="' + question.active + '">Modifier</button>';
+      html += '<button class="btn-danger btn-sm btn-delete-question" data-id="' + question.id + '">Supprimer</button>';
       html += '</div></div></div>';
     });
 
     html += '</section>';
-    content.innerHTML = html;
+    contentRoot.innerHTML = html;
 
     document.getElementById('btn-add-question').addEventListener('click', function () {
       showQuestionForm(null);
@@ -210,17 +275,23 @@
     });
   }
 
-  function showQuestionForm(q) {
+  /**
+   * Render the inline "create / edit question" form.
+   *
+   * @param {object|null} question Existing question for edit mode, null for create.
+   */
+  function showQuestionForm(question) {
     var area = document.getElementById('question-form-area');
     if (!area) return;
-    var isNew = !q;
+    var isNew = !question;
     area.innerHTML =
       '<div class="crud-form">' +
       '<h3>' + (isNew ? 'Nouvelle question' : 'Modifier la question') + '</h3>' +
+      // question_key is only editable at creation — it's referenced elsewhere.
       (isNew ? '<div class="field"><label>Clé (ex: q11)</label><input id="qf-key" type="text" value=""></div>' : '') +
-      '<div class="field"><label>Texte</label><input id="qf-text" type="text" value="' + (q ? escHtml(q.text) : '') + '"></div>' +
-      '<div class="field"><label>Ordre</label><input id="qf-sort" type="number" value="' + (q ? q.sort_order : 0) + '"></div>' +
-      (!isNew ? '<div class="field"><label><input id="qf-active" type="checkbox"' + (q.active ? ' checked' : '') + '> Active</label></div>' : '') +
+      '<div class="field"><label>Texte</label><input id="qf-text" type="text" value="' + (question ? escapeHtml(question.text) : '') + '"></div>' +
+      '<div class="field"><label>Ordre</label><input id="qf-sort" type="number" value="' + (question ? question.sort_order : 0) + '"></div>' +
+      (!isNew ? '<div class="field"><label><input id="qf-active" type="checkbox"' + (question.active ? ' checked' : '') + '> Active</label></div>' : '') +
       '<div class="crud-form-actions">' +
       '<button class="btn-primary btn-sm" id="qf-submit">' + (isNew ? 'Créer' : 'Enregistrer') + '</button>' +
       '<button class="btn-secondary btn-sm" id="qf-cancel">Annuler</button>' +
@@ -241,26 +312,39 @@
         apiCall('POST', 'api/admin/questions', { question_key: key, text: text, sort_order: sort }, function () { loadQuestions(); });
       } else {
         var active = document.getElementById('qf-active').checked;
-        apiCall('PUT', 'api/admin/questions?id=' + q.id, { text: text, sort_order: sort, active: active }, function () { loadQuestions(); });
+        apiCall('PUT', 'api/admin/questions?id=' + question.id, { text: text, sort_order: sort, active: active }, function () { loadQuestions(); });
       }
     });
   }
 
+  /**
+   * Send a DELETE to the API and reload the questions tab on success.
+   *
+   * @param {number} id Question id to delete.
+   */
   function deleteQuestion(id) {
     apiCall('DELETE', 'api/admin/questions?id=' + id, null, function () { loadQuestions(); });
   }
 
   // ═══════════════════════════════════════════════════════════
-  // ONGLET FORMATIONS
+  // FORMATIONS TAB
   // ═══════════════════════════════════════════════════════════
 
+  /**
+   * Fetch the full formations list (active + inactive).
+   */
   function loadFormations() {
     fetch('api/admin/formations', { credentials: 'include' })
-      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (response) { if (!response.ok) throw new Error(); return response.json(); })
       .then(renderFormations)
-      .catch(function () { content.innerHTML = '<p class="admin-error">Erreur lors du chargement des formations.</p>'; });
+      .catch(function () { contentRoot.innerHTML = '<p class="admin-error">Erreur lors du chargement des formations.</p>'; });
   }
 
+  /**
+   * Render the formations CRUD list and wire up edit/delete/add buttons.
+   *
+   * @param {object} data Payload with a `formations` array.
+   */
   function renderFormations(data) {
     var html = '<section class="admin-section">';
     html += '<div class="admin-section-header">';
@@ -269,32 +353,32 @@
     html += '</div>';
     html += '<div id="formation-form-area"></div>';
 
-    data.formations.forEach(function (f) {
-      html += '<div class="crud-item" id="f-item-' + f.id + '">';
+    data.formations.forEach(function (formation) {
+      html += '<div class="crud-item" id="f-item-' + formation.id + '">';
       html += '<div class="crud-item-header">';
       html += '<div>';
-      html += '<strong>' + escHtml(f.name) + '</strong> ';
-      html += '<span class="crud-badge ' + (f.active ? 'badge-active' : 'badge-inactive') + '">' +
-              (f.active ? 'Active' : 'Inactive') + '</span>';
-      if (f.description) html += '<p class="crud-item-text">' + escHtml(f.description) + '</p>';
+      html += '<strong>' + escapeHtml(formation.name) + '</strong> ';
+      html += '<span class="crud-badge ' + (formation.active ? 'badge-active' : 'badge-inactive') + '">' +
+              (formation.active ? 'Active' : 'Inactive') + '</span>';
+      if (formation.description) html += '<p class="crud-item-text">' + escapeHtml(formation.description) + '</p>';
       var meta = [];
-      if (f.contact_email) meta.push('✉ ' + escHtml(f.contact_email));
-      if (f.contact_url)   meta.push('🔗 ' + escHtml(f.contact_url));
+      if (formation.contact_email) meta.push('✉ ' + escapeHtml(formation.contact_email));
+      if (formation.contact_url)   meta.push('🔗 ' + escapeHtml(formation.contact_url));
       if (meta.length) html += '<p class="crud-item-meta">' + meta.join(' · ') + '</p>';
       html += '</div>';
       html += '<div class="crud-item-actions">';
-      html += '<button class="btn-secondary btn-sm btn-edit-formation" data-id="' + f.id + '" ' +
-              'data-name="' + escHtml(f.name) + '" ' +
-              'data-desc="' + escHtml(f.description || '') + '" ' +
-              'data-email="' + escHtml(f.contact_email || '') + '" ' +
-              'data-url="' + escHtml(f.contact_url || '') + '" ' +
-              'data-active="' + f.active + '">Modifier</button>';
-      html += '<button class="btn-danger btn-sm btn-delete-formation" data-id="' + f.id + '">Supprimer</button>';
+      html += '<button class="btn-secondary btn-sm btn-edit-formation" data-id="' + formation.id + '" ' +
+              'data-name="' + escapeHtml(formation.name) + '" ' +
+              'data-desc="' + escapeHtml(formation.description || '') + '" ' +
+              'data-email="' + escapeHtml(formation.contact_email || '') + '" ' +
+              'data-url="' + escapeHtml(formation.contact_url || '') + '" ' +
+              'data-active="' + formation.active + '">Modifier</button>';
+      html += '<button class="btn-danger btn-sm btn-delete-formation" data-id="' + formation.id + '">Supprimer</button>';
       html += '</div></div></div>';
     });
 
     html += '</section>';
-    content.innerHTML = html;
+    contentRoot.innerHTML = html;
 
     document.getElementById('btn-add-formation').addEventListener('click', function () {
       showFormationForm(null);
@@ -319,18 +403,23 @@
     });
   }
 
-  function showFormationForm(f) {
+  /**
+   * Render the inline "create / edit formation" form.
+   *
+   * @param {object|null} formation Existing formation for edit mode, null for create.
+   */
+  function showFormationForm(formation) {
     var area = document.getElementById('formation-form-area');
     if (!area) return;
-    var isNew = !f;
+    var isNew = !formation;
     area.innerHTML =
       '<div class="crud-form">' +
       '<h3>' + (isNew ? 'Nouvelle formation' : 'Modifier la formation') + '</h3>' +
-      '<div class="field"><label>Nom</label><input id="ff-name" type="text" value="' + (f ? escHtml(f.name) : '') + '"></div>' +
-      '<div class="field"><label>Description</label><textarea id="ff-desc" rows="3">' + (f ? escHtml(f.description) : '') + '</textarea></div>' +
-      '<div class="field"><label>Email contact</label><input id="ff-email" type="email" value="' + (f ? escHtml(f.contact_email) : '') + '"></div>' +
-      '<div class="field"><label>URL</label><input id="ff-url" type="url" value="' + (f ? escHtml(f.contact_url) : '') + '"></div>' +
-      (!isNew ? '<div class="field"><label><input id="ff-active" type="checkbox"' + (f.active ? ' checked' : '') + '> Active</label></div>' : '') +
+      '<div class="field"><label>Nom</label><input id="ff-name" type="text" value="' + (formation ? escapeHtml(formation.name) : '') + '"></div>' +
+      '<div class="field"><label>Description</label><textarea id="ff-desc" rows="3">' + (formation ? escapeHtml(formation.description) : '') + '</textarea></div>' +
+      '<div class="field"><label>Email contact</label><input id="ff-email" type="email" value="' + (formation ? escapeHtml(formation.contact_email) : '') + '"></div>' +
+      '<div class="field"><label>URL</label><input id="ff-url" type="url" value="' + (formation ? escapeHtml(formation.contact_url) : '') + '"></div>' +
+      (!isNew ? '<div class="field"><label><input id="ff-active" type="checkbox"' + (formation.active ? ' checked' : '') + '> Active</label></div>' : '') +
       '<div class="crud-form-actions">' +
       '<button class="btn-primary btn-sm" id="ff-submit">' + (isNew ? 'Créer' : 'Enregistrer') + '</button>' +
       '<button class="btn-secondary btn-sm" id="ff-cancel">Annuler</button>' +
@@ -340,6 +429,7 @@
 
     document.getElementById('ff-submit').addEventListener('click', function () {
       var name  = document.getElementById('ff-name').value.trim();
+      // Coerce empty strings to null so the backend stores proper NULLs.
       var desc  = document.getElementById('ff-desc').value.trim() || null;
       var email = document.getElementById('ff-email').value.trim() || null;
       var url   = document.getElementById('ff-url').value.trim() || null;
@@ -349,21 +439,30 @@
         apiCall('POST', 'api/admin/formations', { name: name, description: desc, contact_email: email, contact_url: url }, function () { loadFormations(); });
       } else {
         var active = document.getElementById('ff-active').checked;
-        apiCall('PUT', 'api/admin/formations?id=' + f.id, { name: name, description: desc, contact_email: email, contact_url: url, active: active }, function () { loadFormations(); });
+        apiCall('PUT', 'api/admin/formations?id=' + formation.id, { name: name, description: desc, contact_email: email, contact_url: url, active: active }, function () { loadFormations(); });
       }
     });
   }
 
+  /**
+   * Send a DELETE to the API and reload the formations tab on success.
+   *
+   * @param {number} id Formation id to delete.
+   */
   function deleteFormation(id) {
     apiCall('DELETE', 'api/admin/formations?id=' + id, null, function () { loadFormations(); });
   }
 
   // ═══════════════════════════════════════════════════════════
-  // ONGLET EXPORT
+  // EXPORT TAB
   // ═══════════════════════════════════════════════════════════
 
+  /**
+   * Render the static "download CSV" panel. The link points directly at the
+   * backend route so the browser handles the file download.
+   */
   function renderExport() {
-    content.innerHTML =
+    contentRoot.innerHTML =
       '<section class="admin-section">' +
       '<h2 class="admin-section-title">Export des réponses</h2>' +
       '<p>Téléchargez l\'ensemble des réponses au questionnaire au format CSV (compatible Excel).</p>' +
@@ -372,19 +471,29 @@
   }
 
   // ═══════════════════════════════════════════════════════════
-  // UTILITAIRES
+  // UTILITIES
   // ═══════════════════════════════════════════════════════════
 
+  /**
+   * Tiny wrapper around fetch for admin CRUD calls.
+   * Always includes credentials + CSRF token and parses JSON.
+   *
+   * @param {string}   method    HTTP verb.
+   * @param {string}   url       Endpoint URL.
+   * @param {object?}  body      JSON body, or null for DELETE calls.
+   * @param {Function} onSuccess Callback invoked only when the server returned 2xx.
+   */
   function apiCall(method, url, body, onSuccess) {
-    var opts = {
+    var options = {
       method:      method,
       credentials: 'include',
       headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
     };
-    if (body !== null) opts.body = JSON.stringify(body);
+    if (body !== null) options.body = JSON.stringify(body);
 
-    fetch(url, opts)
-      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+    fetch(url, options)
+      // Always read the body as JSON so we can surface the server's error message.
+      .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
       .then(function (result) {
         if (result.ok) {
           onSuccess();
@@ -395,7 +504,14 @@
       .catch(function () { alert('Erreur réseau.'); });
   }
 
-  function escHtml(str) {
+  /**
+   * Escape a value for safe interpolation into an HTML attribute or text node.
+   * Handles null/undefined by stringifying to an empty string.
+   *
+   * @param {*} str Any value.
+   * @returns {string}
+   */
+  function escapeHtml(str) {
     return String(str || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -403,6 +519,12 @@
       .replace(/"/g, '&quot;');
   }
 
+  /**
+   * Format a MySQL DATETIME string to a short French localised date.
+   *
+   * @param {string|null} str ISO-like datetime or null.
+   * @returns {string}        Localised "02 juin 2025" style, or em dash if empty.
+   */
   function formatDate(str) {
     if (!str) return '—';
     return new Date(str).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });

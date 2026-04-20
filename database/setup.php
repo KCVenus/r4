@@ -17,7 +17,9 @@ use App\Core\Database;
 
 header('Content-Type: text/plain; charset=utf-8');
 
-$defaults = [
+// Default seed accounts created on first run. The password is stored as a
+// bcrypt hash (password_hash), never in plaintext.
+$defaultUsers = [
     ['username' => 'user',  'password' => 'user',  'role' => 'user'],
     ['username' => 'admin', 'password' => 'admin', 'role' => 'admin'],
 ];
@@ -25,14 +27,17 @@ $defaults = [
 try {
     $pdo = Database::getInstance();
 
-    foreach ($defaults as $u) {
-        $hash = password_hash($u['password'], PASSWORD_DEFAULT);
+    foreach ($defaultUsers as $userSpec) {
+        $hash = password_hash($userSpec['password'], PASSWORD_DEFAULT);
+        // INSERT IGNORE makes this script idempotent: re-running it skips
+        // accounts that already exist (unique username constraint).
         $stmt = $pdo->prepare(
             'INSERT IGNORE INTO users (username, password_hash, role) VALUES (?, ?, ?)'
         );
-        $stmt->execute([$u['username'], $hash, $u['role']]);
+        $stmt->execute([$userSpec['username'], $hash, $userSpec['role']]);
+        // rowCount() == 1 -> inserted; 0 -> row was already there.
         $label = $stmt->rowCount() ? 'Créé' : 'Déjà existant';
-        echo "{$label} : {$u['username']} (rôle : {$u['role']})\n";
+        echo "{$label} : {$userSpec['username']} (rôle : {$userSpec['role']})\n";
     }
 
     echo "\nSetup terminé. Vous pouvez vous connecter sur /login.html\n";

@@ -16,8 +16,11 @@
     </div>
     <h1 class="auth-title" id="auth-title">Connexion</h1>
 
+    <!-- Inline error banner — hidden by default, shown by showError() -->
     <div id="auth-error" class="auth-error hidden"></div>
 
+    <!-- novalidate: rely on our own JS checks + backend validation,
+         avoids the inconsistent native browser tooltips. -->
     <form id="auth-form" novalidate>
       <div class="field">
         <label for="username">Nom d'utilisateur</label>
@@ -34,6 +37,7 @@
         />
       </div>
 
+      <!-- Email field is only shown in "register" mode, toggled by setMode(). -->
       <div class="field" id="email-field" style="display:none">
         <label for="email">Email <span class="field-optional">(facultatif)</span></label>
         <input
@@ -61,6 +65,7 @@
       </button>
     </form>
 
+    <!-- Toggle link: switches the form between login and register mode. -->
     <p class="auth-toggle">
       <span id="toggle-text">Pas encore de compte ?</span>
       <button id="toggle-btn" class="link-btn">En créer un</button>
@@ -72,46 +77,61 @@
   </main>
 
   <script>
+    /**
+     * Login / register inline script.
+     *
+     * Single form that toggles between login and register mode via setMode().
+     * Submits to POST /api/auth with { action: "login"|"register", ... }.
+     * On success, redirects to /index.html.
+     */
     (function () {
       'use strict';
 
-      var isLogin   = true;
-      var csrfToken = '';
+      var isLoginMode = true; // true = login form, false = register form
+      var csrfToken   = '';
 
-      var titleEl   = document.getElementById('auth-title');
-      var submitEl  = document.getElementById('auth-submit');
-      var toggleTxt = document.getElementById('toggle-text');
-      var toggleBtn = document.getElementById('toggle-btn');
-      var errorEl   = document.getElementById('auth-error');
-      var form      = document.getElementById('auth-form');
-      var passInput = document.getElementById('password');
+      var titleEl    = document.getElementById('auth-title');
+      var submitEl   = document.getElementById('auth-submit');
+      var toggleText = document.getElementById('toggle-text');
+      var toggleBtn  = document.getElementById('toggle-btn');
+      var errorEl    = document.getElementById('auth-error');
+      var form       = document.getElementById('auth-form');
+      var passInput  = document.getElementById('password');
 
-      // Récupération du CSRF + vérification connexion existante
+      // Bootstrap: fetch CSRF token, then auto-redirect if a session is already active.
       fetch('api/csrf', { credentials: 'include' })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .catch(function ()  { return null; })
+        .then(function (response) { return response.ok ? response.json() : null; })
+        .catch(function ()         { return null; })
         .then(function (data) {
           if (data) csrfToken = data.token;
           return fetch('api/auth', { credentials: 'include' });
         })
-        .then(function (r) {
-          if (r.ok) window.location.href = 'index.html';
+        .then(function (response) {
+          // Already logged in -> skip the form entirely.
+          if (response.ok) window.location.href = 'index.html';
         })
         .catch(function () {});
 
+      /**
+       * Swap the form between login and register mode.
+       * Updates the button/heading text, autocomplete hints, and email visibility.
+       *
+       * @param {boolean} login True for login mode, false for register mode.
+       */
       function setMode(login) {
-        isLogin = login;
-        titleEl.textContent   = login ? 'Connexion' : 'Créer un compte';
-        submitEl.textContent  = login ? 'Se connecter' : 'Créer le compte';
-        toggleTxt.textContent = login ? 'Pas encore de compte ?' : 'Déjà inscrit ?';
-        toggleBtn.textContent = login ? 'En créer un' : 'Se connecter';
+        isLoginMode = login;
+        titleEl.textContent    = login ? 'Connexion' : 'Créer un compte';
+        submitEl.textContent   = login ? 'Se connecter' : 'Créer le compte';
+        toggleText.textContent = login ? 'Pas encore de compte ?' : 'Déjà inscrit ?';
+        toggleBtn.textContent  = login ? 'En créer un' : 'Se connecter';
+        // Tell password managers whether this is an existing or new password field.
         passInput.setAttribute('autocomplete', login ? 'current-password' : 'new-password');
         document.getElementById('email-field').style.display = login ? 'none' : '';
         hideError();
       }
 
-      function showError(msg) {
-        errorEl.textContent = msg;
+      function showError(message) {
+        errorEl.textContent = message;
         errorEl.classList.remove('hidden');
       }
 
@@ -120,20 +140,22 @@
       }
 
       toggleBtn.addEventListener('click', function () {
-        setMode(!isLogin);
+        setMode(!isLoginMode);
       });
 
-      form.addEventListener('submit', function (e) {
-        e.preventDefault();
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
         hideError();
 
         var username = document.getElementById('username').value.trim();
         var password = document.getElementById('password').value;
+        // Empty email -> null so the backend stores a real NULL rather than ''.
         var email    = document.getElementById('email').value.trim() || null;
-        var action   = isLogin ? 'login' : 'register';
+        var action   = isLoginMode ? 'login' : 'register';
 
+        // Disable the submit button to prevent double-submission races.
         submitEl.disabled    = true;
-        submitEl.textContent = isLogin ? 'Connexion…' : 'Création…';
+        submitEl.textContent = isLoginMode ? 'Connexion…' : 'Création…';
 
         fetch('api/auth', {
           method:      'POST',
@@ -141,9 +163,10 @@
           headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
           body:        JSON.stringify({ action: action, username: username, password: password, email: email }),
         })
-          .then(function (r) {
-            return r.json().then(function (data) {
-              return { ok: r.ok, data: data };
+          // Merge the status and body into one object so we can branch on either.
+          .then(function (response) {
+            return response.json().then(function (data) {
+              return { ok: response.ok, data: data };
             });
           })
           .then(function (result) {
@@ -152,13 +175,13 @@
             } else {
               showError(result.data.error || 'Une erreur est survenue');
               submitEl.disabled    = false;
-              submitEl.textContent = isLogin ? 'Se connecter' : 'Créer le compte';
+              submitEl.textContent = isLoginMode ? 'Se connecter' : 'Créer le compte';
             }
           })
           .catch(function () {
             showError('Erreur réseau — le serveur est-il démarré ?');
             submitEl.disabled    = false;
-            submitEl.textContent = isLogin ? 'Se connecter' : 'Créer le compte';
+            submitEl.textContent = isLoginMode ? 'Se connecter' : 'Créer le compte';
           });
       });
     })();
