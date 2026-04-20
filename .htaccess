@@ -1,0 +1,31 @@
+# ── Sécurité : interdire l'accès direct aux dossiers sensibles ──────────────
+<IfModule mod_authz_core.c>
+  <DirectoryMatch "^.*(app|config|database)(/.*)?$">
+    Require all denied
+  </DirectoryMatch>
+</IfModule>
+
+# ── Options de sécurité globales ─────────────────────────────────────────────
+Options -Indexes
+ServerSignature Off
+
+# ── Headers de sécurité ──────────────────────────────────────────────────────
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# ── Redirect HTTP → HTTPS (décommenter en production) ────────────────────────
+# <IfModule mod_rewrite.c>
+#   RewriteEngine On
+#   RewriteCond %{HTTPS} off
+#   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+# </IfModule>
+
+# ── Cache des assets statiques ───────────────────────────────────────────────
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css              "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
