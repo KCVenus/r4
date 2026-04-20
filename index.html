@@ -29,20 +29,20 @@
 
   <main>
 
-    <!-- Écran d'accueil -->
+    <!-- Start screen — shown first, hidden by showView() once the user clicks "start". -->
     <section id="view-start">
       <p id="app-description"></p>
       <button id="btn-start" class="btn-primary">Commencer le test</button>
     </section>
 
-    <!-- Écran question -->
+    <!-- Question screen — rendered entirely by app.js (counter + text + option buttons). -->
     <section id="view-question">
       <div id="question-counter"></div>
       <p id="question-text"></p>
       <div id="options-container"></div>
     </section>
 
-    <!-- Écran résultat -->
+    <!-- Result screen — shown after the last answer; contains the formations list. -->
     <section id="view-result">
       <h2 class="result-title">Formations recommandées</h2>
       <p class="result-subtitle">Selon vos réponses, voici les formations qui vous correspondent le mieux&nbsp;:</p>
