@@ -65,7 +65,8 @@
     (function () {
       'use strict';
 
-      var isLogin = true;
+      var isLogin   = true;
+      var csrfToken = '';
 
       var titleEl   = document.getElementById('auth-title');
       var submitEl  = document.getElementById('auth-submit');
@@ -75,8 +76,14 @@
       var form      = document.getElementById('auth-form');
       var passInput = document.getElementById('password');
 
-      // Déjà connecté → accueil
-      fetch('api/auth', { credentials: 'include' })
+      // Récupération du CSRF + vérification connexion existante
+      fetch('api/csrf', { credentials: 'include' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function ()  { return null; })
+        .then(function (data) {
+          if (data) csrfToken = data.token;
+          return fetch('api/auth', { credentials: 'include' });
+        })
         .then(function (r) {
           if (r.ok) window.location.href = 'index.html';
         })
@@ -119,7 +126,7 @@
         fetch('api/auth', {
           method:      'POST',
           credentials: 'include',
-          headers:     { 'Content-Type': 'application/json' },
+          headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
           body:        JSON.stringify({ action: action, username: username, password: password }),
         })
           .then(function (r) {

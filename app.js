@@ -3,10 +3,11 @@
 
   // ── État ──────────────────────────────────────────────────────────────────
   var state = {
-    questions:   [],
-    answers:     {},
+    questions:    [],
+    answers:      {},
     currentIndex: 0,
-    currentUser: null,
+    currentUser:  null,
+    csrfToken:    '',
   };
 
   // ── Refs DOM ──────────────────────────────────────────────────────────────
@@ -102,7 +103,7 @@
       fetch('api/answers', {
         method:      'POST',
         credentials: 'include',
-        headers:     { 'Content-Type': 'application/json' },
+        headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': state.csrfToken },
         body:        JSON.stringify({ answers: answersArray }),
       }).catch(function () {});
     }
@@ -210,7 +211,7 @@
         fetch('api/auth', {
           method:      'POST',
           credentials: 'include',
-          headers:     { 'Content-Type': 'application/json' },
+          headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': state.csrfToken },
           body:        JSON.stringify({ action: 'logout' }),
         }).finally(function () {
           window.location.href = 'login.html';
@@ -223,8 +224,14 @@
 
   // ── Init ──────────────────────────────────────────────────────────────────
   function init() {
-    // Auth optionnelle — pas de redirection si non connecté
-    fetch('api/auth', { credentials: 'include' })
+    // Récupération du token CSRF puis auth (optionnelle)
+    fetch('api/csrf', { credentials: 'include' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function ()  { return null; })
+      .then(function (data) {
+        if (data) state.csrfToken = data.token;
+        return fetch('api/auth', { credentials: 'include' });
+      })
       .then(function (r) { return r.ok ? r.json() : null; })
       .catch(function ()  { return null; })
       .then(function (user) {
