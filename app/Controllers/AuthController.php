@@ -34,6 +34,13 @@ class AuthController
 
     private function login(array $body): void
     {
+        // ── Rate limiting (5 tentatives / 5 min par session) ──────────────
+        $rl = $_SESSION['_auth_rl'] ?? ['count' => 0, 'until' => 0];
+        if ($rl['until'] > time()) {
+            Response::error('Trop de tentatives. Réessayez dans 5 minutes.', 429);
+            return;
+        }
+
         $username = trim($body['username'] ?? '');
         $password = $body['password']      ?? '';
 
@@ -44,8 +51,17 @@ class AuthController
         $user = User::findByUsername($username);
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
+            $rl['count']++;
+            if ($rl['count'] >= 5) {
+                $rl['until'] = time() + 300;
+                $rl['count'] = 0;
+            }
+            $_SESSION['_auth_rl'] = $rl;
             Response::error('Identifiant ou mot de passe incorrect', 401);
+            return;
         }
+
+        unset($_SESSION['_auth_rl']);
 
         session_regenerate_id(true);
         $_SESSION['user_id']  = $user['id'];
