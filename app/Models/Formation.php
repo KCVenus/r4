@@ -5,6 +5,38 @@ use App\Core\Database;
 
 class Formation
 {
+    public static function getAll(): array
+    {
+        return Database::getInstance()->query(
+            'SELECT id, name, description, contact_email, contact_url, active
+             FROM   formations
+             ORDER  BY id'
+        )->fetchAll();
+    }
+
+    public static function create(string $name, ?string $desc, ?string $email, ?string $url): int
+    {
+        $pdo = Database::getInstance();
+        $pdo->prepare(
+            'INSERT INTO formations (name, description, contact_email, contact_url) VALUES (?, ?, ?, ?)'
+        )->execute([$name, $desc, $email, $url]);
+        return (int) $pdo->lastInsertId();
+    }
+
+    public static function update(int $id, string $name, ?string $desc, ?string $email, ?string $url, bool $active): void
+    {
+        Database::getInstance()->prepare(
+            'UPDATE formations SET name = ?, description = ?, contact_email = ?, contact_url = ?, active = ? WHERE id = ?'
+        )->execute([$name, $desc, $email, $url, $active ? 1 : 0, $id]);
+    }
+
+    public static function deleteById(int $id): void
+    {
+        Database::getInstance()
+            ->prepare('DELETE FROM formations WHERE id = ?')
+            ->execute([$id]);
+    }
+
     public static function recommend(array $answers): array
     {
         $pdo    = Database::getInstance();
