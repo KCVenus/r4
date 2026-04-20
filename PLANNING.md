@@ -80,11 +80,11 @@
 ### Phase 3 — Expérience utilisateur (1 semaine)
 > Améliorer le parcours du visiteur
 
-- [ ] **F3** — Formulaire de contact post-test (envoyer un email à la formation)
-- [ ] **F5** — Page résultat avec scores visuels (barres de progression)
-- [ ] **F6** — Envoi email via SMTP (formation contactée)
-- [ ] **Q1** — Pages 404/500 personnalisées
-- [ ] **Q2** — Champ email à l'inscription
+- [ ] **F3** — Formulaire de contact post-test (nécessite un serveur SMTP)
+- [x] **F5** — Page résultat avec scores visuels (barres de progression)
+- [ ] **F6** — Envoi email via SMTP (nécessite configuration serveur)
+- [x] **Q1** — Pages 404/500 personnalisées
+- [x] **Q2** — Champ email à l'inscription (facultatif, stocké en BDD)
 
 ### Phase 4 — Mise en production (1–2 jours)
 > Déploiement sur le serveur réel
@@ -105,7 +105,7 @@
 | Phase 0 — Correctifs immédiats | 1–2 jours | ✅ Terminé |
 | Phase 1 — Sécurisation | 3–5 jours | 🟡 En cours (B2, B9, B3/B5 restants) |
 | Phase 2 — Fonctionnalités admin | ~1 semaine | ✅ Terminé |
-| Phase 3 — UX | ~1 semaine | 🟡 À planifier |
+| Phase 3 — UX | ~1 semaine | 🟡 En cours (F3/F6 attendent SMTP) |
 | Phase 4 — Mise en production | 1–2 jours | ⚪ Bloqué par Phase 1 |
 
 **Délai total estimé : 3 à 4 semaines à plein régime**

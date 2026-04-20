@@ -987,3 +987,36 @@ section[id^="view-"].active {
   .badge-active   { background: #14532d; color: #86efac; }
   .badge-inactive { background: #450a0a; color: #fca5a5; }
 }
+
+/* ── Score de compatibilité (page résultat) ──────────────────────────────── */
+.formation-score {
+  margin: var(--space-sm) 0;
+}
+
+.formation-score-bar {
+  height: 8px;
+  background: var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.formation-score-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+.formation-score-label {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+/* ── Champ facultatif ────────────────────────────────────────────────────── */
+.field-optional {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
