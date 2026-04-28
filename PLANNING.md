@@ -96,6 +96,18 @@
 - [ ] Suppression de `setup.php` et des fichiers de dev
 - [ ] Monitoring basique (logs PHP, accès Apache)
 
+### Phase 5 — Évolutions post-livraison école (2–3 semaines)
+> Enrichissements demandés au-delà du périmètre R4 initial. Pilotage en réunion M5 avec MA + Service Communication. Périmètre formations gelé en M1 (`docs/scope-formations.md`).
+
+- [ ] **F8** — Compte utilisateur : inscription complète, sauvegarde des résultats du test, page profil avec historique des tests passés
+- [ ] **F9** — Page catalogue : navigation libre dans les 18 formations retenues avec fiche détaillée (objectifs, prérequis, niveau, lien CNAM officiel), accessible indépendamment du test
+- [ ] **F10** — Slider niveau pré-test : étape avant la première question demandant le niveau scolaire actuel (sans diplôme / bac / bac+2 / bac+3 / bac+5+) → filtre automatique des formations éligibles selon les prérequis
+
+**Mapping niveau → prérequis (F10)**
+- Niveau 5 (CC, CP, RNCP niv 5) : bac requis
+- Niveau 6 (Licence, LP, RNCP niv 6) : bac+2 requis
+- Niveau 7 (Ingénieur, Master, RNCP niv 7) : bac+3 requis
+
 ---
 
 ## 3. Récapitulatif
@@ -107,8 +119,9 @@
 | Phase 2 — Fonctionnalités admin | ~1 semaine | ✅ Terminé |
 | Phase 3 — UX | ~1 semaine | ✅ Terminé (contact via `mailto:`, pas de SMTP) |
 | Phase 4 — Mise en production | 1–2 jours | ⚪ Bloqué par Phase 1 |
+| Phase 5 — Évolutions futures | 2–3 semaines | ⚪ Post-rendu école (F8/F9/F10) |
 
-**Délai total estimé : 3 à 4 semaines à plein régime**
+**Délai total estimé : 3 à 4 semaines à plein régime (Phase 0 → 4) + Phase 5 hors périmètre R4 école**
 
 ---
 

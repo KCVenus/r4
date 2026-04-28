@@ -1,12 +1,15 @@
 <!DOCTYPE html>
+<!-- Static 500 error page served when an unhandled server exception occurs. -->
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Erreur serveur — R4</title>
+  <!-- Reuse the main stylesheet so the error page matches the app's visual identity. -->
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
+  <!-- Centred error message — intentionally vague so no server internals leak to the user. -->
   <main style="text-align:center;padding:4rem 1.5rem;max-width:480px;margin:0 auto">
     <p style="font-size:4rem;margin:0">500</p>
     <h1 style="font-size:1.5rem;margin:1rem 0 0.5rem">Erreur serveur</h1>
