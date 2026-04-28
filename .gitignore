@@ -15,3 +15,6 @@ desktop.ini
 # Future-proofing
 node_modules/
 dist/
+
+# Local Claude Code settings
+.claude/
