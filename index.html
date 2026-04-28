@@ -6,7 +6,9 @@
   <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#1e293b"  media="(prefers-color-scheme: dark)" />
   <title>Test d'orientation</title>
-  <link rel="stylesheet" href="style.css" />
+  <!-- Versioned query string busts the Cloudflare CDN cache when assets
+       change ; bump the timestamp on every release that ships JS or CSS. -->
+  <link rel="stylesheet" href="style.css?v=20260428105000" />
 </head>
 <body>
 
@@ -105,6 +107,6 @@
 
   </main>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20260428105000"></script>
 </body>
 </html>
