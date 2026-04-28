@@ -1,7 +1,7 @@
 -- ============================================================
---  r4 Survey App — Script d'installation complet
---  Ordre : schéma → migration v2 → seed
---  Usage : importer une seule fois sur un serveur vierge
+--  r4 Survey App — Full installation script
+--  Order: schema -> migration v2 -> seed data
+--  Usage: import once on a fresh server (safe to re-run with IF NOT EXISTS / INSERT IGNORE)
 -- ============================================================
 
 -- ── 1. Création de la base ───────────────────────────────────
@@ -11,80 +11,99 @@ CREATE DATABASE IF NOT EXISTS `r4_survey`
 
 USE `r4_survey`;
 
--- ── 2. Table utilisateurs ────────────────────────────────────
+-- ── 2. Users ─────────────────────────────────────────────────
+-- Accounts with role-based authorisation (user vs admin).
+-- password_hash stores the bcrypt output of PHP's password_hash() — never plaintext.
 CREATE TABLE IF NOT EXISTS `users` (
   `id`            INT UNSIGNED    NOT NULL AUTO_INCREMENT,
   `username`      VARCHAR(50)     NOT NULL,
-  `email`         VARCHAR(255)    DEFAULT NULL,
+  `email`         VARCHAR(255)    DEFAULT NULL,  -- optional; stored for future contact features
   `password_hash` VARCHAR(255)    NOT NULL,
   `role`          ENUM('user','admin') NOT NULL DEFAULT 'user',
   `created_at`    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  -- Login relies on username uniqueness; email is optional but also unique when present.
   UNIQUE KEY `uq_username` (`username`),
   UNIQUE KEY `uq_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ── 3. Réponses au questionnaire ─────────────────────────────
+-- ── 3. Survey responses (header row per completed run) ───────
+-- One row per quiz submission. Individual answers live in response_answers
+-- to keep this header row lightweight and easy to aggregate.
 CREATE TABLE IF NOT EXISTS `survey_responses` (
   `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id`      INT UNSIGNED NOT NULL,
   `completed_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_user_id` (`user_id`),
+  KEY `idx_user_id` (`user_id`),   -- speeds up the "latest run per user" subquery
+  -- CASCADE: removing a user purges their entire submission history.
   CONSTRAINT `fk_response_user`
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ── 4. Réponses individuelles ─────────────────────────────────
+-- ── 4. Individual answers within a response ──────────────────
+-- question_text and chosen_label are stored as snapshots so future admin edits
+-- to the questions table never silently rewrite historical stats/export data.
 CREATE TABLE IF NOT EXISTS `response_answers` (
   `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `response_id`   INT UNSIGNED NOT NULL,
-  `question_key`  VARCHAR(50)  NOT NULL,
-  `question_text` TEXT         NOT NULL,
+  `question_key`  VARCHAR(50)  NOT NULL,   -- stable string id, e.g. "q1"
+  `question_text` TEXT         NOT NULL,   -- snapshot at answer time
   `chosen_value`  VARCHAR(100) NOT NULL,
   `chosen_label`  VARCHAR(255) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_response_id` (`response_id`),
-  KEY `idx_question_key` (`question_key`),
+  KEY `idx_question_key` (`question_key`),  -- speeds up GROUP BY in StatsController
   CONSTRAINT `fk_answer_response`
     FOREIGN KEY (`response_id`) REFERENCES `survey_responses` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── 5. Questions ──────────────────────────────────────────────
+-- question_key is the stable string id (e.g. "q1") exposed to the frontend
+-- and stored in response_answers; the numeric id stays private to the DB.
 CREATE TABLE IF NOT EXISTS `questions` (
   `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `question_key` VARCHAR(50)  NOT NULL,
   `text`         TEXT         NOT NULL,
   `sort_order`   INT          NOT NULL DEFAULT 0,
-  `active`       TINYINT(1)   NOT NULL DEFAULT 1,
+  `active`       TINYINT(1)   NOT NULL DEFAULT 1,  -- soft-disable: hides from users without deleting
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_question_key` (`question_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ── 6. Options de chaque question ────────────────────────────
+-- ── 6. Options per question ───────────────────────────────────
+-- Each question has N options. `value` is what the scoring engine matches on;
+-- `label` is the human-readable text shown to the user.
+-- CASCADE on question_id: deleting a question automatically removes its options.
 CREATE TABLE IF NOT EXISTS `question_options` (
   `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `question_id` INT UNSIGNED NOT NULL,
-  `value`       VARCHAR(50)  NOT NULL,
-  `label`       VARCHAR(255) NOT NULL,
+  `value`       VARCHAR(50)  NOT NULL,   -- machine-readable key used in formation_scores
+  `label`       VARCHAR(255) NOT NULL,   -- displayed in the questionnaire UI
   `sort_order`  INT          NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_opt_question`
     FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ── 7. Formations ─────────────────────────────────────────────
+-- ── 7. Formations (training programmes) ──────────────────────
+-- Destination of the recommendation engine.
+-- `active = 0` hides a formation from results without deleting its score history.
 CREATE TABLE IF NOT EXISTS `formations` (
   `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name`          VARCHAR(255) NOT NULL,
   `description`   TEXT,
-  `contact_email` VARCHAR(255) DEFAULT NULL,
-  `contact_url`   VARCHAR(500) DEFAULT NULL,
+  `contact_email` VARCHAR(255) DEFAULT NULL,  -- shown as mailto: link in results
+  `contact_url`   VARCHAR(500) DEFAULT NULL,  -- shown as "En savoir plus" link in results
   `active`        TINYINT(1)   NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ── 8. Scoring ────────────────────────────────────────────────
+-- ── 8. Scoring pivot ──────────────────────────────────────────
+-- Each row says: "selecting option X adds N points to formation Y".
+-- Used by Formation::recommend() to rank formations.
+-- CASCADE on both sides: removing a question/option or a formation
+-- never leaves dangling score rows.
 CREATE TABLE IF NOT EXISTS `formation_scores` (
   `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `option_id`    INT UNSIGNED NOT NULL,
@@ -197,9 +216,9 @@ INSERT IGNORE INTO `formation_scores` (`option_id`, `formation_id`, `points`) VA
 -- q10 non → SIO +1
 (20, 1, 1);
 
--- ── 13. Comptes par défaut ────────────────────────────────────
--- Mots de passe : user/user  et  admin/admin
--- IMPORTANT : supprimer ou modifier ces comptes avant mise en production !
+-- ── 13. Default accounts ─────────────────────────────────────
+-- Passwords: user/user and admin/admin (bcrypt hashed above).
+-- IMPORTANT: remove or change these accounts before going to production!
 INSERT IGNORE INTO `users` (`username`, `password_hash`, `role`) VALUES
   ('user',  '$2y$10$t10b4XzdXaZFnVwrze/oDedAV.iYJpJvg5SLasiLJW3NZpA3Dq5YK', 'user'),
   ('admin', '$2y$10$0UBklcTwmrqqaGvUTCOB2eF7H3ptZmGpnfq5/OMOqEyRM588CAc72', 'admin');

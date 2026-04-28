@@ -130,11 +130,19 @@
         hideError();
       }
 
+      /**
+       * Display a user-facing error message in the banner above the form.
+       *
+       * @param {string} message Text to show.
+       */
       function showError(message) {
         errorEl.textContent = message;
         errorEl.classList.remove('hidden');
       }
 
+      /**
+       * Clear and hide the error banner (called on mode switch and on retry).
+       */
       function hideError() {
         errorEl.classList.add('hidden');
       }

@@ -248,7 +248,7 @@ section[id^="view-"].active {
   color: var(--color-primary);
 }
 
-/* ── Summary view ────────────────────────────────────────────────────────── */
+/* ── Summary view (unused in current UI, kept for future use) ───────────── */
 .summary-title {
   font-size: 1.25rem;
   font-weight: 700;
@@ -337,7 +337,7 @@ section[id^="view-"].active {
   text-decoration: underline;
 }
 
-/* ── Last test card ──────────────────────────────────────────────────────── */
+/* ── Last test card (shown on the start screen for returning users) ─────── */
 .last-test-card {
   background: var(--color-bg);
   border: 1px solid var(--color-border);
@@ -545,7 +545,7 @@ section[id^="view-"].active {
   font-weight: 700;
 }
 
-/* Stat cards */
+/* ── Stat cards (big-number tiles at the top of the stats tab) ──────────── */
 .stat-cards {
   display: flex;
   gap: var(--space-md);
@@ -578,7 +578,7 @@ section[id^="view-"].active {
   font-weight: 600;
 }
 
-/* Question distribution cards */
+/* ── Question distribution cards (bar-chart per question in stats tab) ──── */
 .q-card {
   background: var(--color-surface);
   border-radius: var(--radius-md);
@@ -632,7 +632,7 @@ section[id^="view-"].active {
   white-space: nowrap;
 }
 
-/* User table */
+/* ── User table (answers-per-user matrix in stats tab) ──────────────────── */
 .table-wrap {
   overflow-x: auto;
   border-radius: var(--radius-md);
@@ -721,7 +721,7 @@ section[id^="view-"].active {
   line-height: 1.5;
 }
 
-/* Carte formation */
+/* ── Formation cards (result screen: one card per recommended programme) ─── */
 .formation-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -768,7 +768,7 @@ section[id^="view-"].active {
   text-decoration: none;
 }
 
-/* CTA connexion */
+/* ── Guest save CTA (prompts guests to register after seeing their results) */
 .save-cta {
   background: var(--color-bg);
   border: 1px dashed var(--color-border);

@@ -1,7 +1,10 @@
 -- ============================================================
 --  r4 Survey App — Default users seed
---  Passwords: user/user  and  admin/admin
+--  Passwords: user/user  and  admin/admin (bcrypt hashes)
 --  Run AFTER schema.sql
+--
+--  IMPORTANT: remove or change these accounts before production.
+--  INSERT IGNORE makes this script idempotent (safe to re-run).
 -- ============================================================
 
 USE `r4_survey`;
