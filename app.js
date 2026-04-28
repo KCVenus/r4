@@ -42,7 +42,15 @@
     saveCta:          document.getElementById('save-cta'),
     btnStart:         document.getElementById('btn-start'),
     btnRestart:       document.getElementById('btn-restart'),
+    contactModal:     document.getElementById('contact-modal'),
+    contactForm:      document.getElementById('contact-form'),
+    contactFeedback:  document.getElementById('contact-feedback'),
+    contactFormation: document.getElementById('contact-formation-name'),
   };
+
+  // Formation currently targeted by the open contact modal. Stored on the
+  // closure (rather than the DOM) so we don't trust user-tampered attributes.
+  var contactTarget = null;
 
   /**
    * Toggle which `<section id="view-*">` is visible.
@@ -235,13 +243,15 @@
           actions.appendChild(link);
         }
 
-        if (formation.contact_email) {
-          var mailto = document.createElement('a');
-          mailto.href        = 'mailto:' + formation.contact_email;
-          mailto.className   = 'btn-secondary formation-btn';
-          mailto.textContent = 'Contacter par e-mail';
-          actions.appendChild(mailto);
-        }
+        // Always offer the "be contacted" path, even when contact_email is null:
+        // the backend falls back to the admin inbox so the visitor still has a
+        // way to reach someone.
+        var contactBtn = document.createElement('button');
+        contactBtn.type      = 'button';
+        contactBtn.className = 'btn-secondary formation-btn';
+        contactBtn.textContent = 'Être contacté';
+        contactBtn.addEventListener('click', function () { openContactModal(formation); });
+        actions.appendChild(contactBtn);
 
         if (actions.children.length > 0) card.appendChild(actions);
         elements.formationsList.appendChild(card);
@@ -254,6 +264,100 @@
     }
 
     showView('result');
+  }
+
+  /**
+   * Open the contact modal for a given formation.
+   *
+   * Stores the formation in a closure variable (not in the DOM) so the
+   * submit handler reads the trusted reference even if a user tampers with
+   * data-* attributes. Pre-fills the email field for logged-in users.
+   *
+   * @param {object} formation Formation object as returned by /api/recommend.
+   */
+  function openContactModal(formation) {
+    contactTarget = formation;
+    elements.contactFormation.textContent = formation.name;
+    elements.contactFeedback.textContent  = '';
+    elements.contactFeedback.className    = 'contact-feedback';
+    elements.contactForm.reset();
+    // Pre-fill the name when we know it (logged-in users); email isn't in
+    // the /me payload so it stays empty.
+    if (state.currentUser && state.currentUser.username) {
+      elements.contactForm.name.value = state.currentUser.username;
+    }
+    elements.contactModal.classList.remove('hidden');
+    // Focus the first field for keyboard users / screen readers.
+    setTimeout(function () { elements.contactForm.name.focus(); }, 0);
+  }
+
+  /**
+   * Close the contact modal and clear the cached target.
+   */
+  function closeContactModal() {
+    elements.contactModal.classList.add('hidden');
+    contactTarget = null;
+  }
+
+  /**
+   * Wire the contact modal: close buttons, ESC key, submit handler.
+   * Called once at boot.
+   */
+  function setupContactModal() {
+    // Any element marked data-close inside the modal closes it (backdrop, ×).
+    elements.contactModal.querySelectorAll('[data-close]').forEach(function (el) {
+      el.addEventListener('click', closeContactModal);
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && !elements.contactModal.classList.contains('hidden')) {
+        closeContactModal();
+      }
+    });
+
+    elements.contactForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!contactTarget) return;
+
+      var data = {
+        formation_id: contactTarget.id,
+        name:         elements.contactForm.name.value.trim(),
+        email:        elements.contactForm.email.value.trim(),
+        message:      elements.contactForm.message.value.trim(),
+      };
+
+      // Disable the submit button while the request is in flight to prevent
+      // double-submits (which would also burn the rate-limit counter twice).
+      var submitBtn = elements.contactForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      elements.contactFeedback.textContent = 'Envoi en cours…';
+      elements.contactFeedback.className   = 'contact-feedback';
+
+      fetch('api/contact', {
+        method:      'POST',
+        credentials: 'include',
+        headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': state.csrfToken },
+        body:        JSON.stringify(data),
+      })
+      .then(function (response) {
+        return response.json().then(function (body) { return { ok: response.ok, body: body }; });
+      })
+      .then(function (result) {
+        if (result.ok) {
+          elements.contactFeedback.textContent = 'Message envoyé. La formation vous recontactera.';
+          elements.contactFeedback.className   = 'contact-feedback contact-feedback--ok';
+          // Auto-close after a short delay so users see the confirmation.
+          setTimeout(closeContactModal, 1800);
+        } else {
+          elements.contactFeedback.textContent = (result.body && result.body.error) || 'Erreur inconnue';
+          elements.contactFeedback.className   = 'contact-feedback contact-feedback--error';
+        }
+      })
+      .catch(function () {
+        elements.contactFeedback.textContent = 'Erreur réseau, réessayez.';
+        elements.contactFeedback.className   = 'contact-feedback contact-feedback--error';
+      })
+      .finally(function () { submitBtn.disabled = false; });
+    });
   }
 
   /**
@@ -343,6 +447,7 @@
         });
 
         elements.btnRestart.addEventListener('click', restart);
+        setupContactModal();
 
         showView('start');
       })

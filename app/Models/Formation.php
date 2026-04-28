@@ -27,6 +27,27 @@ class Formation
     }
 
     /**
+     * Fetch a single active formation by id, or null when missing/inactive.
+     *
+     * Used by the contact form (F3/F6) to resolve the recipient address
+     * from the formation the user picked on the result screen.
+     *
+     * @param int $id Formation id.
+     * @return array|null Row with id/name/contact_email/contact_url or null.
+     */
+    public static function getActiveById(int $id): ?array
+    {
+        $stmt = Database::getInstance()->prepare(
+            'SELECT id, name, description, contact_email, contact_url
+             FROM   formations
+             WHERE  id = ? AND active = 1'
+        );
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        return $row !== false ? $row : null;
+    }
+
+    /**
      * Insert a new formation. Active by default in the DB schema.
      *
      * @param string      $name  Display name.

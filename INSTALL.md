@@ -35,7 +35,20 @@ DB_NAME=r4_survey
 DB_USER=votre_user_db
 DB_PASS=votre_mot_de_passe_db
 DB_CHARSET=utf8mb4
+
+# SMTP (formulaire de contact post-test, F3/F6)
+# Laisser SMTP_USER/SMTP_PASS vides en dev = mail désactivé (l'API renvoie 503).
+SMTP_HOST=ssl0.ovh.net
+SMTP_PORT=465
+SMTP_USER=contact@votredomaine.fr
+SMTP_PASS=mot_de_passe_smtp
+SMTP_FROM_NAME=R4 — Test d'orientation
+MAIL_FALLBACK_TO=contact@votredomaine.fr
 ```
+
+> Le service mail utilise PHPMailer (vendored sous `vendor/phpmailer/`). Aucun
+> Composer requis : les 3 fichiers nécessaires sont chargés à la main dans
+> `api/index.php`.
 
 ---
 
@@ -110,3 +123,4 @@ Dans `.htaccess`, décommenter le bloc suivant :
 - [ ] HTTPS activé dans `.htaccess` (B9)
 - [ ] Test bout en bout : parcours invité, parcours connecté, admin
 - [ ] Vérification des logs PHP (`error_log` configuré)
+- [ ] `SMTP_USER` / `SMTP_PASS` remplis et test d'envoi via le formulaire de contact (F3/F6)

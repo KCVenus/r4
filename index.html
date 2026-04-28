@@ -56,6 +56,36 @@
       <button id="btn-restart" class="btn-secondary">Recommencer le test</button>
     </section>
 
+    <!--
+      Contact modal — opened from a formation card on the result screen.
+      Hidden by default; populated with the target formation name on open.
+      Submits to POST /api/contact with the CSRF token already loaded at boot.
+    -->
+    <div id="contact-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="contact-modal-title">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-panel">
+        <button type="button" class="modal-close" data-close aria-label="Fermer">×</button>
+        <h3 id="contact-modal-title">Être contacté</h3>
+        <p class="modal-formation">Formation : <span id="contact-formation-name"></span></p>
+        <form id="contact-form" novalidate>
+          <label>
+            <span>Nom</span>
+            <input type="text" name="name" maxlength="100" required autocomplete="name" />
+          </label>
+          <label>
+            <span>Email</span>
+            <input type="email" name="email" maxlength="254" required autocomplete="email" />
+          </label>
+          <label>
+            <span>Message</span>
+            <textarea name="message" rows="4" maxlength="2000" required></textarea>
+          </label>
+          <p id="contact-feedback" class="contact-feedback" role="status" aria-live="polite"></p>
+          <button type="submit" class="btn-primary">Envoyer</button>
+        </form>
+      </div>
+    </div>
+
   </main>
 
   <script src="app.js"></script>
