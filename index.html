@@ -30,10 +30,26 @@
 
   <main>
 
-    <!-- Start screen — shown first, hidden by showView() once the user clicks "start". -->
+    <!--
+      Start screen — shown first.
+      Two CTAs let the visitor pick the test depth: 10-question quick mode
+      (3 min) or 30-question full mode (10 min). The chosen mode is stored
+      on the closure state and drives the /api/questions fetch.
+    -->
     <section id="view-start">
       <p id="app-description"></p>
-      <button id="btn-start" class="btn-primary">Commencer le test</button>
+      <div class="start-modes">
+        <button id="btn-start-quick" class="btn-primary start-mode">
+          <span class="start-mode-title">Test rapide</span>
+          <span class="start-mode-meta">10 questions · ~3 min</span>
+          <span class="start-mode-desc">Une question par grand domaine. Idéal pour un premier aperçu.</span>
+        </button>
+        <button id="btn-start-full" class="btn-secondary start-mode">
+          <span class="start-mode-title">Test complet</span>
+          <span class="start-mode-meta">30 questions · ~10 min</span>
+          <span class="start-mode-desc">Couverture détaillée + soft skills, pour un matching plus précis.</span>
+        </button>
+      </div>
     </section>
 
     <!--

@@ -16,10 +16,15 @@ class QuestionController
 {
     /**
      * GET /questions — list active questions with their options.
+     *
+     * Accepts an optional `?mode=quick` query param to restrict to the
+     * 10-question short test ; any other value (including missing) returns
+     * the full 30-question set, preserving backward compatibility.
      */
     public function index(): void
     {
-        Response::json(['questions' => Question::getActive()]);
+        $quickOnly = ($_GET['mode'] ?? '') === 'quick';
+        Response::json(['questions' => Question::getActive($quickOnly)]);
     }
 
     /**

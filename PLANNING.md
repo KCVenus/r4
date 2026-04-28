@@ -104,6 +104,7 @@
 - [x] **F10** — Slider niveau pré-test : étape `view-level` après le démarrage, range slider 5 positions (sans diplôme / bac / bac+2 / bac+3 / bac+5+) → mappé sur `user_level` ∈ {0,5,6,7,8}. Côté backend : `Formation::recommend()` filtre `WHERE level <= user_level`, persisté dans `survey_responses.user_level`.
 - [x] **DB** — Migration `migration_v3_cnam.sql` : remplace les 5 formations de démo par les 18 retenues (cf. `docs/scope-formations.md`), ajoute `formations.level` + `survey_responses.user_level`, refonte du scoring.
 - [x] **Q+** — Migration `migration_v4_questions.sql` : passe le test de 10 à 30 questions thématiques (couverture domaine par domaine + soft skills), 60 options, 124 lignes de scoring rebâties pour les 18 formations CNAM. Précision attendue significativement supérieure (chaque formation reçoit du signal sur 5–10 questions au lieu de 2–3).
+- [x] **F11 — Test rapide vs test complet** : Migration `migration_v5_quick.sql` ajoute `questions.quick`. L'utilisateur choisit sur l'écran d'accueil entre **Test rapide** (10 questions, ~3 min, une par grand domaine) et **Test complet** (30 questions, ~10 min, couverture détaillée + soft skills). `GET /api/questions?mode=quick` filtre côté backend, le frontend charge la liste à la demande après le choix.
 
 ---
 

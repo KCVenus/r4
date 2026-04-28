@@ -1021,6 +1021,49 @@ section[id^="view-"].active {
   color: var(--color-text-muted);
 }
 
+/* ── Start screen mode picker (F11 — quick vs full test) ─────────────── */
+.start-modes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.start-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  text-align: left;
+  /* Override the default btn flex centering for multi-line content. */
+  white-space: normal;
+}
+
+.start-mode-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.start-mode-meta {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.start-mode-desc {
+  font-size: 0.875rem;
+  font-weight: 400;
+  opacity: 0.85;
+  line-height: 1.35;
+}
+
+.start-mode:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 /* ── Level slider screen (F10) ──────────────────────────────────────────── */
 .level-title {
   font-size: 1.25rem;

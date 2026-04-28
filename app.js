@@ -22,6 +22,7 @@
     currentUser:  null,  // null when visitor is a guest
     csrfToken:    '',    // Required header for state-changing requests
     userLevel:    null,  // Canonical study level (0/5/6/7/8) — set on view-level
+    testMode:     'full',// 'quick' (10 questions) or 'full' (30) — set on view-start
   };
 
   // Slider position (0..4) → canonical study level passed to the API.
@@ -51,7 +52,8 @@
     optionsContainer: document.getElementById('options-container'),
     formationsList:   document.getElementById('formations-list'),
     saveCta:          document.getElementById('save-cta'),
-    btnStart:         document.getElementById('btn-start'),
+    btnStartQuick:    document.getElementById('btn-start-quick'),
+    btnStartFull:     document.getElementById('btn-start-full'),
     btnRestart:       document.getElementById('btn-restart'),
     levelInput:       document.getElementById('level-input'),
     levelCurrent:     document.getElementById('level-current'),
@@ -311,8 +313,12 @@
     state.answers      = {};
     state.currentIndex = 0;
     state.userLevel    = null;
+    state.testMode     = 'full';
     elements.progressBar.style.width = '0%';
     elements.saveCta.classList.add('hidden');
+    // Re-enable the start CTAs disabled by startTest() during the previous run.
+    elements.btnStartQuick.disabled = false;
+    elements.btnStartFull.disabled  = false;
     showView('start');
   }
 
@@ -348,11 +354,54 @@
   }
 
   /**
+   * Click handler shared by the two start CTAs. Loads the right question
+   * subset for the chosen mode, then routes to the level slider.
+   *
+   * Disables both buttons while the fetch is in flight so a double-click
+   * doesn't trigger overlapping requests / inconsistent state.
+   *
+   * @param {'quick'|'full'} mode Test depth picked by the user.
+   */
+  function startTest(mode) {
+    state.testMode = mode;
+    elements.btnStartQuick.disabled = true;
+    elements.btnStartFull.disabled  = true;
+
+    fetch('api/questions?mode=' + encodeURIComponent(mode))
+      .then(function (response) {
+        if (!response.ok) throw new Error('Impossible de charger les questions');
+        return response.json();
+      })
+      .then(function (data) {
+        if (!data.questions || data.questions.length === 0) {
+          throw new Error('Aucune question disponible');
+        }
+        state.questions    = data.questions;
+        state.answers      = {};
+        state.currentIndex = 0;
+
+        // Reset the slider to "Bac+2" so a previous run doesn't leak.
+        elements.levelInput.value = 2;
+        updateLevelDisplay();
+        showView('level');
+      })
+      .catch(function () {
+        // Restore the start screen so the user can retry; failures here are
+        // typically transient (network) rather than user errors.
+        elements.btnStartQuick.disabled = false;
+        elements.btnStartFull.disabled  = false;
+        alert('Impossible de charger les questions. Réessayez.');
+      });
+  }
+
+  /**
    * Bootstrap the app on DOMContentLoaded.
    *
    * The promise chain is ordered:
-   *   CSRF token -> auth check -> questions fetch -> render start screen.
-   * Any error in this chain renders a fallback error screen.
+   *   CSRF token -> auth check -> render start screen.
+   * Questions are loaded lazily once the user picks a test mode (see
+   * startTest), which avoids fetching the full 30-question payload for
+   * visitors who never start a test.
    */
   function init() {
     // Step 1: get the CSRF token (mandatory for the logout POST later).
@@ -368,30 +417,13 @@
       .catch(function ()         { return null; })
       .then(function (user) {
         setupHeader(user);
-        // Step 3: load the questionnaire content.
-        return fetch('api/questions');
-      })
-      .then(function (response) {
-        if (!response.ok) throw new Error('Impossible de charger les questions');
-        return response.json();
-      })
-      .then(function (data) {
-        if (!data.questions || data.questions.length === 0) {
-          throw new Error('Aucune question disponible');
-        }
-        state.questions = data.questions;
 
         document.title                   = 'Test d\'orientation';
         elements.title.textContent       = 'Test d\'orientation';
-        elements.description.textContent = 'Répondez à quelques questions pour découvrir la formation qui vous correspond le mieux.';
+        elements.description.textContent = 'Choisissez la profondeur du test pour découvrir les formations CNAM qui vous correspondent.';
 
-        elements.btnStart.addEventListener('click', function () {
-          // Reset the slider to "Bac+2" each time the test starts so a
-          // previous run doesn't leak into the next one.
-          elements.levelInput.value = 2;
-          updateLevelDisplay();
-          showView('level');
-        });
+        elements.btnStartQuick.addEventListener('click', function () { startTest('quick'); });
+        elements.btnStartFull.addEventListener('click',  function () { startTest('full');  });
 
         elements.levelInput.addEventListener('input',  updateLevelDisplay);
         elements.levelInput.addEventListener('change', updateLevelDisplay);
@@ -399,15 +431,13 @@
           var idx = parseInt(elements.levelInput.value, 10) || 0;
           state.userLevel = LEVEL_MAP[idx].value;
           showView('question');
-          state.currentIndex = 0;
-          state.answers = {};
           renderQuestion();
         });
 
         elements.btnRestart.addEventListener('click', restart);
 
         // Initialise the slider label so it reads correctly even if the user
-        // never clicks "Commencer le test" (e.g. they navigate via keyboard).
+        // never clicks a start CTA (e.g. they navigate via keyboard).
         updateLevelDisplay();
         showView('start');
       })
@@ -416,7 +446,7 @@
         document.body.innerHTML =
           '<div style="padding:2rem;color:#b91c1c;max-width:480px;margin:2rem auto">' +
           '<h2 style="margin-bottom:.5rem">Erreur</h2>' +
-          '<p>' + err.message + '</p></div>';
+          '<p>' + (err && err.message || 'Erreur inconnue') + '</p></div>';
       });
   }
 
