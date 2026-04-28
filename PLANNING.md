@@ -80,9 +80,9 @@
 ### Phase 3 — Expérience utilisateur (1 semaine)
 > Améliorer le parcours du visiteur
 
-- [x] **F3** — Formulaire de contact post-test (modal sur la page résultat, POST `/api/contact`, CSRF + rate-limit)
+- [x] **F3** — Formulaire de contact post-test : bouton « Être contacté » sur chaque card résultat → ouvre l'app mail du device (lien `mailto:` avec sujet et corps pré-remplis). Pas de modal in-app, pas de backend.
 - [x] **F5** — Page résultat avec scores visuels (barres de progression)
-- [x] **F6** — Envoi email via SMTP (PHPMailer vendored + service `Mailer`, OVH ssl0.ovh.net:465, fallback `MAIL_FALLBACK_TO` quand `formation.contact_email` vide). Activation prod : remplir `SMTP_USER`/`SMTP_PASS` dans `.env`.
+- [x] **F6** — Envoi email : délégué au client mail du device via `mailto:`. Pas de SMTP côté serveur (zéro config, zéro credentials, zéro dépendance). Fallback `contact@ohvenus.fr` si la formation n'a pas de `contact_email`.
 - [x] **Q1** — Pages 404/500 personnalisées
 - [x] **Q2** — Champ email à l'inscription (facultatif, stocké en BDD)
 
@@ -105,7 +105,7 @@
 | Phase 0 — Correctifs immédiats | 1–2 jours | ✅ Terminé |
 | Phase 1 — Sécurisation | 3–5 jours | 🟡 En cours (B2 et B9 = actions serveur prod) |
 | Phase 2 — Fonctionnalités admin | ~1 semaine | ✅ Terminé |
-| Phase 3 — UX | ~1 semaine | ✅ Terminé (SMTP livré, à activer en prod via `.env`) |
+| Phase 3 — UX | ~1 semaine | ✅ Terminé (contact via `mailto:`, pas de SMTP) |
 | Phase 4 — Mise en production | 1–2 jours | ⚪ Bloqué par Phase 1 |
 
 **Délai total estimé : 3 à 4 semaines à plein régime**

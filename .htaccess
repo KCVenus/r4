@@ -1,7 +1,7 @@
 # ── Sécurité : interdire l'accès direct aux dossiers sensibles ──────────────
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteRule ^(app|config|database|vendor)(/|$) - [F,L]
+  RewriteRule ^(app|config|database)(/|$) - [F,L]
 </IfModule>
 
 # ── Options de sécurité globales ─────────────────────────────────────────────
