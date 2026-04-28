@@ -80,9 +80,9 @@
 ### Phase 3 — Expérience utilisateur (1 semaine)
 > Améliorer le parcours du visiteur
 
-- [ ] **F3** — Formulaire de contact post-test (nécessite un serveur SMTP)
+- [x] **F3** — Formulaire de contact post-test (modal sur la page résultat, POST `/api/contact`, CSRF + rate-limit)
 - [x] **F5** — Page résultat avec scores visuels (barres de progression)
-- [ ] **F6** — Envoi email via SMTP (nécessite configuration serveur)
+- [x] **F6** — Envoi email via SMTP (PHPMailer vendored + service `Mailer`, OVH ssl0.ovh.net:465, fallback `MAIL_FALLBACK_TO` quand `formation.contact_email` vide). Activation prod : remplir `SMTP_USER`/`SMTP_PASS` dans `.env`.
 - [x] **Q1** — Pages 404/500 personnalisées
 - [x] **Q2** — Champ email à l'inscription (facultatif, stocké en BDD)
 
@@ -117,7 +117,7 @@
 | Phase 0 — Correctifs immédiats | 1–2 jours | ✅ Terminé |
 | Phase 1 — Sécurisation | 3–5 jours | 🟡 En cours (B2 et B9 = actions serveur prod) |
 | Phase 2 — Fonctionnalités admin | ~1 semaine | ✅ Terminé |
-| Phase 3 — UX | ~1 semaine | 🟡 En cours (F3/F6 attendent SMTP) |
+| Phase 3 — UX | ~1 semaine | ✅ Terminé (SMTP livré, à activer en prod via `.env`) |
 | Phase 4 — Mise en production | 1–2 jours | ⚪ Bloqué par Phase 1 |
 | Phase 5 — Évolutions futures | 2–3 semaines | ⚪ Post-rendu école (F8/F9/F10) |
 
