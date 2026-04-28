@@ -96,6 +96,14 @@
 - [ ] Suppression de `setup.php` et des fichiers de dev
 - [ ] Monitoring basique (logs PHP, accès Apache)
 
+### Phase 5 — Périmètre CNAM + compte utilisateur
+> Élargissement du périmètre formations + parcours connecté
+
+- [x] **F8** — Compte utilisateur : page `account.html` avec historique des tests passés (date, niveau choisi, formations recommandées recalculées). Endpoint `GET /api/me/tests`.
+- [x] **F9** — Catalogue : 18 formations CNAM PACA visibles sur la page compte, regroupées par niveau RNCP, avec lien vers la fiche officielle. Endpoint `GET /api/formations`.
+- [x] **F10** — Slider niveau pré-test : étape `view-level` après le démarrage, range slider 5 positions (sans diplôme / bac / bac+2 / bac+3 / bac+5+) → mappé sur `user_level` ∈ {0,5,6,7,8}. Côté backend : `Formation::recommend()` filtre `WHERE level <= user_level`, persisté dans `survey_responses.user_level`.
+- [x] **DB** — Migration `migration_v3_cnam.sql` : remplace les 5 formations de démo par les 18 retenues (cf. `docs/scope-formations.md`), ajoute `formations.level` + `survey_responses.user_level`, refonte du scoring.
+
 ---
 
 ## 3. Récapitulatif
@@ -107,6 +115,7 @@
 | Phase 2 — Fonctionnalités admin | ~1 semaine | ✅ Terminé |
 | Phase 3 — UX | ~1 semaine | ✅ Terminé (contact via `mailto:`, pas de SMTP) |
 | Phase 4 — Mise en production | 1–2 jours | ⚪ Bloqué par Phase 1 |
+| Phase 5 — CNAM + compte | ~1 semaine | ✅ Terminé (F8/F9/F10 livrés, périmètre 18 formations CNAM) |
 
 **Délai total estimé : 3 à 4 semaines à plein régime**
 

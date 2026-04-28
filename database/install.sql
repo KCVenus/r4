@@ -25,9 +25,13 @@ CREATE TABLE IF NOT EXISTS `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── 3. Réponses au questionnaire ─────────────────────────────
+-- user_level = niveau scolaire choisi par l'utilisateur au début du test
+-- (5=bac, 6=bac+2, 7=bac+3, 8=bac+5+, 0=sans diplôme). Utilisé pour
+-- filtrer les formations éligibles (cf. F10 + scope-formations.md).
 CREATE TABLE IF NOT EXISTS `survey_responses` (
   `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id`      INT UNSIGNED NOT NULL,
+  `user_level`   TINYINT UNSIGNED NULL,
   `completed_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
@@ -74,6 +78,8 @@ CREATE TABLE IF NOT EXISTS `question_options` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── 7. Formations ─────────────────────────────────────────────
+-- level = niveau RNCP (5/6/7) utilisé par F10 pour filtrer les
+-- formations éligibles selon le niveau scolaire de l'utilisateur.
 CREATE TABLE IF NOT EXISTS `formations` (
   `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name`          VARCHAR(255) NOT NULL,
@@ -81,6 +87,7 @@ CREATE TABLE IF NOT EXISTS `formations` (
   `contact_email` VARCHAR(255) DEFAULT NULL,
   `contact_url`   VARCHAR(500) DEFAULT NULL,
   `active`        TINYINT(1)   NOT NULL DEFAULT 1,
+  `level`         TINYINT UNSIGNED NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -97,27 +104,75 @@ CREATE TABLE IF NOT EXISTS `formation_scores` (
     FOREIGN KEY (`formation_id`) REFERENCES `formations`       (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ── 9. Données : formations ───────────────────────────────────
-INSERT IGNORE INTO `formations` (`id`, `name`, `description`, `contact_email`, `contact_url`, `active`) VALUES
-(1, 'BTS SIO - Informatique',
-   'Formation aux metiers du developpement web, de la cybersecurite et des reseaux. Deux options : SLAM (developpement) ou SISR (reseaux).',
-   'sio@monecole.fr', NULL, 1),
-
-(2, 'Cybersecurite & Reseaux',
-   'Specialisation dans la protection des systemes d''information, la gestion des incidents et la securisation des infrastructures.',
-   'cyber@monecole.fr', NULL, 1),
-
-(3, 'BTS MCO - Commerce',
-   'Management Commercial Operationnel : vente, relation client, gestion d''unite commerciale et animation d''equipe.',
-   'mco@monecole.fr', NULL, 1),
-
-(4, 'BTS CG - Comptabilite & Gestion',
-   'Comptabilite, paie, fiscalite et controle de gestion. Formation ideale pour integrer un cabinet comptable ou le service financier d''une entreprise.',
-   'cg@monecole.fr', NULL, 1),
-
-(5, 'BTS Design Graphique & Communication',
-   'Creation visuelle, identite de marque, motion design et communication digitale. Pour les profils creatifs et visuels.',
-   'design@monecole.fr', NULL, 1);
+-- ── 9. Données : formations CNAM PACA (18 retenues, cf. docs/scope-formations.md) ─
+INSERT IGNORE INTO `formations`
+  (`id`, `name`, `description`, `contact_email`, `contact_url`, `active`, `level`)
+VALUES
+-- Niveau 5 (bac)
+(1, 'Certificat pro Développeur web junior',
+   'Formation courte aux fondamentaux du développement web (HTML/CSS/JS, bases serveur). Code CNAM : CP6500A.',
+   'paca@cnam.fr',
+   'https://www.cnam-paca.fr/nos-formations/htt/certificat-professionnel-developpeur-web-junior',
+   1, 5),
+(2, 'RNCP Concepteur développeur de solutions informatiques',
+   'Titre RNCP niveau 5 orienté développement applicatif et conception logicielle. Code CNAM : CRN0700A.',
+   'paca@cnam.fr',
+   'https://www.cnam-paca.fr/nos-formations/htt/rncp-niveau-5-concepteur-developpeur-de-solutions-informatiques',
+   1, 5),
+(3, 'CC Gestionnaire de Paye',
+   'Certificat de compétence orienté gestion de la paie, droit social et logiciels RH. Code CNAM : CC11600A.',
+   'paca@cnam.fr', NULL, 1, 5),
+(4, 'CP Assistant comptable',
+   'Certificat professionnel : tenue de comptes, déclarations fiscales courantes, paie de base. Code CNAM : CP0200A.',
+   'paca@cnam.fr', NULL, 1, 5),
+(5, 'RNCP Assistant de gestion',
+   'Titre RNCP niveau 5 : appui administratif, suivi budgétaire, relation clients/fournisseurs. Code CNAM : CPN7300A.',
+   'paca@cnam.fr', NULL, 1, 5),
+-- Niveau 6 (bac+2)
+(6, 'Licence Informatique (L3)',
+   'Licence générale informatique L3 : algorithmique, bases de données, génie logiciel. Code CNAM : LG02501A.',
+   'paca@cnam.fr',
+   'https://www.cnam-paca.fr/nos-formations/htt/licence-generale-sciences-technologiesinformatique',
+   1, 6),
+(7, 'RNCP Responsable RH',
+   'Titre RNCP niveau 6 : gestion des ressources humaines, recrutement, droit du travail. Code CNAM : CPN0400A.',
+   'paca@cnam.fr', NULL, 1, 6),
+(8, 'Licence Comptabilité Contrôle Audit',
+   'Licence générale CCA L3 : comptabilité approfondie, fiscalité, contrôle de gestion. Code CNAM : LG03607A.',
+   'paca@cnam.fr', NULL, 1, 6),
+(9, 'Licence Commerce, vente et marketing (L3)',
+   'Licence générale orientée commerce, négociation, marketing digital. Code CNAM : LG03606A.',
+   'paca@cnam.fr', NULL, 1, 6),
+(10, 'LP Gestion des organisations',
+   'Licence professionnelle : pilotage opérationnel d''équipe, gestion de projet, management. Code CNAM : LG03601A.',
+   'paca@cnam.fr', NULL, 1, 6),
+(11, 'Licence Génie civil · Ingénierie du bâtiment',
+   'Licence générale orientée bâtiment : structure, conduite de travaux, calculs. Code CNAM : LG03503A.',
+   'paca@cnam.fr', NULL, 1, 6),
+(12, 'Licence Électrotechnique et systèmes',
+   'Licence générale L3 électrotechnique : énergie, automatisme, systèmes embarqués. Code CNAM : LG03903A.',
+   'paca@cnam.fr', NULL, 1, 6),
+(13, 'LP Gestion des établissements sanitaires et sociaux',
+   'Licence professionnelle pour cadres intermédiaires du médico-social. Code CNAM : LP11502A.',
+   'paca@cnam.fr', NULL, 1, 6),
+-- Niveau 7 (bac+3)
+(14, 'Ingénieur Informatique · Cybersécurité',
+   'Diplôme d''ingénieur CNAM, parcours cybersécurité (bac+5). Code CNAM : CYC9106A.',
+   'paca@cnam.fr',
+   'https://www.cnam-paca.fr/nos-formations/htt/diplome-d-ingenieur-informatique-parcours-cybersecurite',
+   1, 7),
+(15, 'Ingénieur Informatique · Multimédia (Toulon, alternance)',
+   'Diplôme d''ingénieur CNAM Multimédia · Expérience Interactive, ancré à Toulon en alternance. Code CNAM : ING6700A.',
+   'paca@cnam.fr', NULL, 1, 7),
+(16, 'Ingénieur Bâtiment',
+   'Diplôme d''ingénieur CNAM en génie civil et bâtiment (bac+5). Code CNAM : CYC8301A.',
+   'paca@cnam.fr', NULL, 1, 7),
+(17, 'Ingénieur Génie électrique',
+   'Diplôme d''ingénieur CNAM en génie électrique (bac+5). Code CNAM : CYC8801A.',
+   'paca@cnam.fr', NULL, 1, 7),
+(18, 'RNCP Manager de la chaîne logistique',
+   'Titre RNCP niveau 7 : pilotage supply chain, transport, achats, distribution. Code CNAM : CPN2700A.',
+   'paca@cnam.fr', NULL, 1, 7);
 
 -- ── 10. Données : questions ───────────────────────────────────
 INSERT IGNORE INTO `questions` (`id`, `question_key`, `text`, `sort_order`, `active`) VALUES
@@ -155,47 +210,40 @@ INSERT IGNORE INTO `question_options` (`id`, `question_id`, `value`, `label`, `s
 -- q10
 (19, 10, 'oui', 'Oui', 1), (20, 10, 'non', 'Non', 2);
 
--- ── 12. Données : scoring ─────────────────────────────────────
--- formation IDs : 1=SIO  2=Cyber  3=MCO  4=CG  5=Design
+-- ── 12. Données : scoring (option → formation, cf. migration_v3_cnam.sql) ─
+-- Formation IDs et thèmes :
+--   1-5  niv 5 (CP web, RNCP CDSI, CC Paye, CP Compta, RNCP Assist gestion)
+--   6-13 niv 6 (Licence Info, RH, LCCA, Commerce, LP Gestion, GC Bât, Élec, médico-social)
+--   14-18 niv 7 (Ingés Cyber/Multimédia/Bât/Élec, Manager logistique)
+-- option_id rappel : q1 oui=1 non=2 | q2 oui=3 | q3 oui=5 | q4 oui=7
+--                    q5 oui=9 | q6 oui=11 | q7 oui=13 | q8 oui=15
+--                    q9 equipe=17 seul=18 | q10 oui=19 non=20
 
 INSERT IGNORE INTO `formation_scores` (`option_id`, `formation_id`, `points`) VALUES
--- q1 oui (tech) → SIO +3, Cyber +2
-(1,  1, 3), (1,  2, 2),
--- q1 non → MCO +1, CG +1
-(2,  3, 1), (2,  4, 1),
-
--- q2 oui (chiffres) → CG +3, SIO +1
-(3,  4, 3), (3,  1, 1),
-
--- q3 oui (web/apps) → SIO +3
-(5,  1, 3),
-
--- q4 oui (gestion projets) → MCO +2, SIO +1
-(7,  3, 2), (7,  1, 1),
-
--- q5 oui (vente) → MCO +3
-(9,  3, 3),
--- q5 non → SIO +1
-(10, 1, 1),
-
--- q6 oui (cyber) → Cyber +3, SIO +1
-(11, 2, 3), (11, 1, 1),
-
--- q7 oui (design) → Design +3
-(13, 5, 3),
-
--- q8 oui (compta) → CG +3, MCO +1
-(15, 4, 3), (15, 3, 1),
-
--- q9 equipe → MCO +1, Design +1
-(17, 3, 1), (17, 5, 1),
--- q9 autonomie → SIO +1, CG +1
-(18, 1, 1), (18, 4, 1),
-
--- q10 oui (responsabilite) → MCO +2, CG +1
-(19, 3, 2), (19, 4, 1),
--- q10 non → SIO +1
-(20, 1, 1);
+-- q1 oui (tech)
+(1, 1, 2), (1, 2, 2), (1, 6, 2), (1, 14, 3), (1, 15, 3),
+-- q2 oui (chiffres)
+(3, 3, 2), (3, 4, 3), (3, 5, 2), (3, 8, 3), (3, 18, 1),
+-- q3 oui (web/apps)
+(5, 1, 3), (5, 2, 3), (5, 6, 2), (5, 15, 2),
+-- q4 oui (gestion projet/équipe)
+(7, 5, 1), (7, 7, 3), (7, 10, 3), (7, 18, 3), (7, 14, 1), (7, 16, 2), (7, 17, 2),
+-- q5 oui (vente)
+(9, 9, 3),
+-- q6 oui (cybersécurité)
+(11, 14, 3), (11, 2, 1), (11, 17, 1),
+-- q7 oui (design/visuel)
+(13, 15, 3), (13, 1, 1),
+-- q8 oui (compta/gestion fin)
+(15, 4, 3), (15, 8, 3), (15, 3, 2), (15, 5, 1),
+-- q9 équipe (managérial)
+(17, 7, 1), (17, 10, 1), (17, 13, 1), (17, 18, 2), (17, 9, 1),
+-- q9 autonomie (technique individuel)
+(18, 1, 1), (18, 2, 1), (18, 4, 1), (18, 6, 1), (18, 14, 1), (18, 17, 1),
+-- q10 oui (responsabilité/évolution)
+(19, 7, 2), (19, 10, 2), (19, 14, 2), (19, 15, 1), (19, 16, 2), (19, 17, 2), (19, 18, 3),
+-- q10 non (rester opérationnel)
+(20, 1, 1), (20, 2, 1), (20, 4, 1), (20, 6, 1), (20, 11, 1), (20, 12, 1);
 
 -- ── 13. Comptes par défaut ────────────────────────────────────
 -- Mots de passe : user/user  et  admin/admin

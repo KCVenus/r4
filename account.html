@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1e293b"  media="(prefers-color-scheme: dark)" />
+  <title>Mon compte</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header id="app-header">
+    <div class="header-top">
+      <h1 id="app-title">Mon compte</h1>
+      <div class="user-info">
+        <span id="username-display"></span>
+        <a href="index.html" class="link-btn">Refaire le test</a>
+        <a id="admin-link" href="admin.html" class="link-btn hidden">Admin</a>
+        <button id="btn-logout" class="link-btn">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="account-main">
+
+    <!--
+      "Mes anciens tests" : history of past survey runs (F8). The most recent
+      test sits at the top. Each card shows the date, the level chosen at the
+      time, and the top recommended formations recomputed server-side.
+    -->
+    <section class="account-section">
+      <h2>Mes anciens tests</h2>
+      <p id="tests-empty" class="account-empty hidden">Aucun test passé pour l'instant. Lancez votre premier !</p>
+      <div id="tests-list"></div>
+    </section>
+
+    <!--
+      "Catalogue formations" : the 18 CNAM PACA formations grouped by level
+      (F9). Browsable independently of the test, useful as a reference once
+      the user has identified their direction.
+    -->
+    <section class="account-section">
+      <h2>Catalogue des formations CNAM PACA</h2>
+      <p class="account-section-desc">18 formations retenues, groupées par niveau RNCP.</p>
+      <div id="catalog-list"></div>
+    </section>
+
+  </main>
+
+  <script src="account.js"></script>
+</body>
+</html>
