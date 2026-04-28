@@ -22,7 +22,6 @@ session_start();
 $base = __DIR__ . '/../app';
 require_once $base . '/Core/Database.php';
 require_once $base . '/Core/Response.php';
-require_once $base . '/Core/Mailer.php';
 require_once $base . '/Models/User.php';
 require_once $base . '/Models/Question.php';
 require_once $base . '/Models/Formation.php';
@@ -33,16 +32,9 @@ require_once $base . '/Controllers/RecommendController.php';
 require_once $base . '/Controllers/AnswerController.php';
 require_once $base . '/Controllers/StatsController.php';
 require_once $base . '/Controllers/AdminController.php';
-require_once $base . '/Controllers/ContactController.php';
-
-// PHPMailer (vendored manually, no composer) — only the 3 files we actually use.
-$phpmailer = __DIR__ . '/../vendor/phpmailer/phpmailer/src';
-require_once $phpmailer . '/Exception.php';
-require_once $phpmailer . '/PHPMailer.php';
-require_once $phpmailer . '/SMTP.php';
 
 use App\Core\Response;
-use App\Controllers\{AuthController, QuestionController, RecommendController, AnswerController, StatsController, AdminController, ContactController};
+use App\Controllers\{AuthController, QuestionController, RecommendController, AnswerController, StatsController, AdminController};
 
 // ── Router ────────────────────────────────────────────────────────────────
 // `_route` is the path rewritten by api/.htaccess (see RewriteRule there).
@@ -64,7 +56,7 @@ if (in_array($route, $adminRoutes, true)) {
 // Every mutating endpoint (except /auth logout which is harmless) must present
 // the token the client received from GET /csrf. hash_equals is timing-safe.
 $csrfProtected = [
-    ['POST', 'auth'], ['POST', 'answers'], ['POST', 'contact'],
+    ['POST', 'auth'], ['POST', 'answers'],
     ['POST', 'admin/questions'], ['PUT', 'admin/questions'], ['DELETE', 'admin/questions'],
     ['POST', 'admin/formations'], ['PUT', 'admin/formations'], ['DELETE', 'admin/formations'],
 ];
@@ -91,7 +83,6 @@ try {
         ['POST', 'auth']      => (new AuthController())->handle(),
         ['GET',  'questions'] => (new QuestionController())->index(),
         ['POST', 'recommend'] => (new RecommendController())->recommend(),
-        ['POST', 'contact']   => (new ContactController())->send(),
         ['GET',  'answers']   => (new AnswerController())->last(),
         ['POST', 'answers']   => (new AnswerController())->store(),
         ['GET',  'stats']               => (new StatsController())->index(),
