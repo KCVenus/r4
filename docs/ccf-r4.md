@@ -70,6 +70,47 @@ Le projet est conduit dans le cadre d'une 4<sup>e</sup> année d'apprentissage, 
 - **Infrastructure mutualisée** — le déploiement repose sur les ressources serveur existantes ; toute introduction de dépendance externe nouvelle doit être justifiée et validée par l'administrateur système.
 - **Sobriété de moyens** — pas de budget logiciel dédié ; la solution doit reposer sur des outils libres ou déjà en place.
 
+## 2.5. Cadre budgétaire et projection sur trois ans
+
+Le projet est conduit sans enveloppe budgétaire dédiée allouée par le commanditaire. La seule ligne de coût engagée est la **rémunération de l'apprenti chef de projet**, à hauteur de **1 100 € bruts mensuels** sur la durée du semestre. L'ensemble des autres briques (hébergement, base de données, outillage, certificats) repose sur des ressources déjà mutualisées au sein du CNAM PACA ou sur des outils libres sans coût d'acquisition. Cette absence de budget marketing ou logiciel dédié est constitutive de la posture de sobriété affichée en section 2.4 ; elle conditionne aussi les arbitrages techniques décrits ultérieurement (CCT §2.1).
+
+### 2.5.1. Ventilation du coût de réalisation v1
+
+| Poste | Mode de prise en charge | Coût direct projet |
+|---|---|---|
+| Rémunération apprenti chef de projet | Apprentissage CNAM PACA, ~3 mois de semestre effectif | **3 300 €** (3 × 1 100 €) |
+| Hébergement serveur | Infrastructure mutualisée existante CNAM PACA / serveur partagé | 0 € marginal |
+| Base de données MySQL | Instance partagée existante | 0 € marginal |
+| Certificat TLS | Let's Encrypt (renouvellement automatique) | 0 € |
+| Logiciels (PHP, MySQL, nginx, Git) | Open source | 0 € |
+| Outillage (GitHub privé, VS Code, navigateurs) | Plans gratuits / licences gratuites | 0 € |
+| Dépendances externes applicatives | Aucune (cf. CCT §2.3) | 0 € |
+| **Total coût direct v1** | | **≈ 3 300 €** |
+
+La structure de coût est ainsi à **100 % de nature humaine**. Toute évolution ultérieure du périmètre se traduira en jours-homme additionnels, sans création de nouvelle ligne logicielle ou d'infrastructure tant que les hypothèses de charge resteront en deçà des seuils décrits dans le CCT (§10.3).
+
+### 2.5.2. Projection TCO sur trois ans (build vs buy)
+
+L'arbitrage entre développement sur mesure et solution du marché a été instruit selon une projection de coût total de possession à trois ans. Trois scénarios sont comparés : la solution interne retenue (R4), une solution SaaS sur étagère, et un développement clé en main externalisé.
+
+| Scénario | Coût année 1 | Coût récurrent annuel | TCO 3 ans |
+|---|---|---|---|
+| **R4 — interne, sur mesure (retenu)** | 3 300 € (apprenti) | ~1 000 € (maintenance estimée 1 j/mois × tarif interne) | **~5 300 €** |
+| SaaS chatbot d'orientation (Crisp, Intercom, Tally Pro) | 100 € / mois × 12 = 1 200 € | 1 200 € / an | 3 600 € + risque de hausse tarifaire |
+| Développement externalisé clé en main | 18 000 € (forfait moyen marché) | 2 500 € / an (tierce maintenance) | **~23 000 €** |
+
+Le scénario interne est légèrement plus coûteux que le SaaS sur trois ans, mais reste un ordre de grandeur en dessous de l'externalisation. Le surcoût face au SaaS est compensé par l'absence de dépendance contractuelle, l'autonomie complète sur la donnée (conformité RGPD facilitée), l'alignement strict au besoin métier (les SaaS génériques exigeraient des contournements), et la pérennité longue traîne (un SaaS abandonné ou racheté impose une migration coûteuse). Cette grille a été présentée et validée en réunion M1.
+
+### 2.5.3. Coûts évités par la solution interne
+
+La quantification des coûts évités complète la justification budgétaire. Trois lignes ont été chiffrées indicativement.
+
+- **Temps conseiller économisé** — l'outil pré-qualifie en amont les contacts entrants, ce qui réduit le nombre d'appels téléphoniques de 15-30 minutes consacrés à du tri de profil. Une économie estimative de 30 minutes par contact pré-qualifié, sur une base raisonnable de plusieurs dizaines de contacts par mois, représente plusieurs jours de temps conseiller libérés par trimestre.
+- **Coûts d'opportunité d'abandon** — la fraction de candidats qui abandonnent faute de réponse rapide (cf. §2.3) est en partie convertie par le test, qui propose une orientation immédiate sans attendre la disponibilité d'un Responsable de formation.
+- **Coût de licence évité** — un SaaS générique (~1 200 € / an) n'est pas engagé.
+
+Ces économies ne sont pas garanties à ce stade ; leur validation interviendra dans l'évaluation post-déploiement (KPI de conversion test → contact, KPI de taux de complétion).
+
 # 3. Périmètre fonctionnel
 
 ## 3.1. Utilisateurs cibles

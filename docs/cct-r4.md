@@ -402,6 +402,41 @@ Le pipeline d'intégration continue est défini dans `.github/workflows/lint.yml
 
 Les jobs sont rapides (< 30 secondes) et systématiquement requis avant tout merge sur `master` (politique de protection de branche GitHub). L'absence de framework de test unitaire à ce stade est un choix : la couverture par tests automatisés n'apporterait pas suffisamment de valeur sur un code applicatif aussi linéaire pour justifier la maintenance du harnais. Un palier de tests fonctionnels via *cURL* sur les principales routes API est envisageable en Phase 5.
 
+## 6.7. Coût d'exploitation et structure budgétaire
+
+### 6.7.1. Structure des coûts récurrents
+
+L'application n'engage **aucun coût récurrent direct** au-delà des ressources déjà mutualisées par le CNAM PACA. Le tableau ci-dessous récapitule l'origine de chaque ligne d'exploitation.
+
+| Ligne d'exploitation | Mode de prise en charge | Coût marginal annuel |
+|---|---|---|
+| Hébergement serveur (CPU, RAM, stockage) | Mutualisé sur l'infrastructure existante | 0 € |
+| Bande passante | Mutualisée, volumétrie négligeable (< 200 ko / page, cf. §7.2) | 0 € |
+| Base de données MySQL | Instance partagée existante | 0 € |
+| Certificat TLS (renouvellement) | Let's Encrypt via *certbot* (cf. §6.3) | 0 € |
+| Domaine `r4.ohvenus.fr` | Sous-domaine d'un domaine existant | 0 € |
+| Sauvegardes | Inclus dans le dispositif mutualisé (§6.5) | 0 € |
+| Surveillance externe | Sonde HTTP gratuite type UptimeRobot (§7.4) | 0 € |
+| Dépendances logicielles | Aucune (cf. §2.3) | 0 € |
+| **Total OPEX hors RH** | | **0 €** |
+
+L'absence de coût logiciel ou d'infrastructure récurrent est une conséquence directe de la posture de sobriété décrite en section 2.1 et constitue un argument structurant face à toute solution SaaS alternative.
+
+### 6.7.2. Charge de maintenance estimée
+
+La maintenance courante est estimée à **environ 1 jour-homme par mois**, couvrant les correctifs de sécurité, l'application des mises à jour mineures de PHP/MySQL/nginx, la revue hebdomadaire des logs (§7.3), la rotation éventuelle des secrets et la surveillance du certificat TLS. Ce volume reste compatible avec une délégation au sein de l'équipe interne du Pôle Innovation, sans recours à un prestataire externe.
+
+Une charge plus élevée (jusqu'à 3 jours par mois) doit être anticipée sur les six premiers mois après mise en production, le temps que les premiers signaux d'usage remontent et que des correctifs ergonomiques soient livrés en réponse aux retours terrain.
+
+### 6.7.3. Conditions de sortie et coûts associés
+
+La sortie de la solution — par migration vers un autre outil, par arrêt du service ou par changement d'hébergement — n'engage aucun coût contractuel (pas d'abonnement, pas d'engagement de durée). Les seuls coûts à anticiper en cas de sortie seraient :
+
+- Une charge ponctuelle estimée à **2 à 5 jours-homme** pour exporter les données utilisateur (les routes d'export sont prévues, cf. §10.1) et les transférer vers la solution cible.
+- Le délai de communication aux utilisateurs et le traitement des éventuelles demandes RGPD résiduelles (suppression définitive, transmission d'archive personnelle).
+
+Aucun coût de pénalité, de licence résiduelle ou de réversibilité fournisseur n'est en jeu, ce qui constitue une caractéristique non triviale comparativement à un déploiement SaaS standard.
+
 # 7. Performance, sobriété et observabilité
 
 ## 7.1. Indicateurs de performance applicative
