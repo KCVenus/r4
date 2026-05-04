@@ -248,6 +248,43 @@ section[id^="view-"].active {
   color: var(--color-primary);
 }
 
+/* ── Back button ─────────────────────────────────────────────────────────── */
+/* Discreet text link aligned to the start of its view; lets the user step
+   back one question (or the level slider) without losing the rest. */
+.btn-back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.btn-back:hover,
+.btn-back:focus-visible {
+  color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.08);
+  outline: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-back:hover,
+  .btn-back:focus-visible {
+    background: rgba(96, 165, 250, 0.12);
+  }
+}
+
 /* ── Summary view ────────────────────────────────────────────────────────── */
 .summary-title {
   font-size: 1.25rem;

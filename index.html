@@ -8,7 +8,7 @@
   <title>Test d'orientation</title>
   <!-- Versioned query string busts the Cloudflare CDN cache when assets
        change ; bump the timestamp on every release that ships JS or CSS. -->
-  <link rel="stylesheet" href="style.css?v=20260428105000" />
+  <link rel="stylesheet" href="style.css?v=20260504085235" />
 </head>
 <body>
 
@@ -61,6 +61,9 @@
       values {0, 5, 6, 7, 8} used by /api/recommend.
     -->
     <section id="view-level">
+      <button type="button" class="btn-back" data-back-target="start" aria-label="Revenir au choix du test">
+        <span aria-hidden="true">&larr;</span> Retour
+      </button>
       <h2 class="level-title">Quel est votre niveau d'études actuel&nbsp;?</h2>
       <p class="level-subtitle">On filtrera les formations qui vous sont accessibles.</p>
 
@@ -86,6 +89,9 @@
 
     <!-- Question screen — rendered entirely by app.js (counter + text + option buttons). -->
     <section id="view-question">
+      <button type="button" id="btn-back-question" class="btn-back" aria-label="Revenir à la question précédente">
+        <span aria-hidden="true">&larr;</span> Retour
+      </button>
       <div id="question-counter"></div>
       <p id="question-text"></p>
       <div id="options-container"></div>
@@ -107,6 +113,6 @@
 
   </main>
 
-  <script src="app.js?v=20260428105000"></script>
+  <script src="app.js?v=20260504085235"></script>
 </body>
 </html>

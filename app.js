@@ -59,6 +59,7 @@
     levelCurrent:     document.getElementById('level-current'),
     levelWarning:     document.getElementById('level-warning'),
     btnLevelConfirm:  document.getElementById('btn-level-confirm'),
+    btnBackQuestion:  document.getElementById('btn-back-question'),
   };
 
   // Default fallback recipient when a formation has no contact_email — keeps
@@ -306,6 +307,26 @@
   }
 
   /**
+   * Go back one step in the questionnaire flow.
+   *
+   * From a question: drop the answer for the previous question (so the user
+   * can pick again) and re-render it. From the very first question, fall
+   * back to the level-slider view. The currently displayed question's own
+   * answer was never recorded (handleAnswer advances right after recording),
+   * so only the previous one needs to be cleared.
+   */
+  function goBackQuestion() {
+    if (state.currentIndex === 0) {
+      showView('level');
+      return;
+    }
+    state.currentIndex--;
+    var prevQuestion = state.questions[state.currentIndex];
+    delete state.answers[prevQuestion.id];
+    renderQuestion();
+  }
+
+  /**
    * Reset the in-memory state and return to the start screen.
    * Does not clear `state.questions` — those are still valid.
    */
@@ -435,6 +456,15 @@
         });
 
         elements.btnRestart.addEventListener('click', restart);
+        elements.btnBackQuestion.addEventListener('click', goBackQuestion);
+
+        // "Retour" buttons declared via data-back-target (e.g. on view-level)
+        // route straight to the named view without touching question state.
+        document.querySelectorAll('.btn-back[data-back-target]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            showView(btn.dataset.backTarget);
+          });
+        });
 
         // Initialise the slider label so it reads correctly even if the user
         // never clicks a start CTA (e.g. they navigate via keyboard).
