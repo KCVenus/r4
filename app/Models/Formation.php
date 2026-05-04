@@ -20,9 +20,28 @@ class Formation
     public static function getAll(): array
     {
         return Database::getInstance()->query(
-            'SELECT id, name, description, contact_email, contact_url, active
+            'SELECT id, name, description, contact_email, contact_url, active, level
              FROM   formations
              ORDER  BY id'
+        )->fetchAll();
+    }
+
+    /**
+     * Public catalogue : every active formation, ordered by level then name.
+     *
+     * Used by GET /api/formations/all for the logged-in user account page (F9).
+     * Excludes the level-NULL safeguard since active rows must have a level
+     * after migration v3.
+     *
+     * @return array Rows of active formations.
+     */
+    public static function getAllActive(): array
+    {
+        return Database::getInstance()->query(
+            'SELECT id, name, description, contact_email, contact_url, level
+             FROM   formations
+             WHERE  active = 1
+             ORDER  BY level, name'
         )->fetchAll();
     }
 
@@ -74,23 +93,29 @@ class Formation
     }
 
     /**
-     * Compute the top 3 formations matching the given answers.
+     * Compute the top 3 formations matching the given answers, optionally
+     * restricted to the user's eligible level (F10).
      *
      * Scoring algorithm:
      *   1. For each (question_key, chosen_value), look up every formation that
      *      scores points on that option via the formation_scores pivot.
      *   2. Sum points per formation id.
-     *   3. Sort descending, keep the top 3, compute a normalised percent
-     *      against the best score so the top card always shows 100%.
+     *   3. Drop formations whose RNCP `level` is above $userLevel (eligibility
+     *      filter, cf. docs/scope-formations.md mapping).
+     *   4. Sort descending, keep the top 3, normalise to a percentage against
+     *      the best score so the top card always shows 100%.
      *
-     * Fallback: if no answer yields any points (e.g. brand-new dataset),
-     * return the first 3 active formations so the user is never shown an
-     * empty result screen.
+     * Fallback: if no answer yields any points (e.g. brand-new dataset or
+     * fully-blank questionnaire), return the first 3 eligible active
+     * formations so the user is never shown an empty result screen.
      *
-     * @param array $answers Array of {question_key, chosen_value, ...}.
-     * @return array         Up to 3 formations with `score` and `percent` fields.
+     * @param array    $answers   Array of {question_key, chosen_value, ...}.
+     * @param int|null $userLevel User's chosen study level (5/6/7/8); null
+     *                            means "no filter" so legacy clients keep
+     *                            working unchanged.
+     * @return array              Up to 3 formations with `score` + `percent`.
      */
-    public static function recommend(array $answers): array
+    public static function recommend(array $answers, ?int $userLevel = null): array
     {
         $pdo    = Database::getInstance();
         $scores = [];
@@ -121,28 +146,56 @@ class Formation
 
         // No matches at all -> return a sensible default set rather than an empty screen.
         if (empty($scores)) {
-            return $pdo->query(
-                'SELECT id, name, description, contact_email, contact_url
-                 FROM   formations WHERE active = 1 LIMIT 3'
-            )->fetchAll();
+            $where  = 'active = 1';
+            $params = [];
+            if ($userLevel !== null) {
+                $where   .= ' AND level <= ?';
+                $params[] = $userLevel;
+            }
+            $stmt = $pdo->prepare(
+                "SELECT id, name, description, contact_email, contact_url, level
+                 FROM   formations
+                 WHERE  $where
+                 ORDER  BY level, id
+                 LIMIT 3"
+            );
+            $stmt->execute($params);
+            return $stmt->fetchAll();
         }
 
         arsort($scores);
-        $topIds   = array_keys(array_slice($scores, 0, 3, true));
-        $maxScore = max($scores) ?: 1;
-        // Safe because $topIds originates from DB-controlled integer keys,
-        // but we still cast through intval to defend against edge cases.
-        $idList   = implode(',', array_map('intval', $topIds));
+        // Resolve the candidate ids from the score map; we still need to hit
+        // the DB to get level + filter ineligible rows out before slicing.
+        $candidateIds = array_keys($scores);
+        $idList       = implode(',', array_map('intval', $candidateIds));
 
-        $formations = $pdo->query(
-            "SELECT id, name, description, contact_email, contact_url
+        $where = "id IN ($idList) AND active = 1";
+        $params = [];
+        if ($userLevel !== null) {
+            $where   .= ' AND level <= ?';
+            $params[] = $userLevel;
+        }
+
+        $stmt = $pdo->prepare(
+            "SELECT id, name, description, contact_email, contact_url, level
              FROM   formations
-             WHERE  id IN ($idList) AND active = 1"
-        )->fetchAll();
+             WHERE  $where"
+        );
+        $stmt->execute($params);
+        $formations = $stmt->fetchAll();
 
-        // MySQL returned rows in PK order; re-sort by score so the best match comes first.
+        // Re-sort by score (DB returned them in PK order) and trim to top 3.
         usort($formations, fn($a, $b) => ($scores[$b['id']] ?? 0) - ($scores[$a['id']] ?? 0));
+        $formations = array_slice($formations, 0, 3);
 
+        if (empty($formations)) {
+            // All scored formations were filtered out by the level cap (rare:
+            // user picked a low level but only matched higher-level rows).
+            // Fall back to the eligible default set so the result is never empty.
+            return self::recommend([], $userLevel);
+        }
+
+        $maxScore = max(array_map(fn($f) => $scores[$f['id']] ?? 0, $formations)) ?: 1;
         // Attach raw score + percentage (relative to best) for the UI progress bar.
         return array_map(function ($formation) use ($scores, $maxScore) {
             $score = $scores[$formation['id']] ?? 0;

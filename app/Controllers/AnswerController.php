@@ -28,7 +28,11 @@ class AnswerController
     /**
      * POST /answers — persist a full submission for the current user.
      *
-     * Expected JSON body: { "answers": [ {question_key, question_text, chosen_value, chosen_label}, ... ] }
+     * Expected JSON body:
+     *   {
+     *     "answers":    [ {question_key, question_text, chosen_value, chosen_label}, ... ],
+     *     "user_level": 5|6|7|8   // optional study level chosen at the start
+     *   }
      */
     public function store(): void
     {
@@ -41,8 +45,11 @@ class AnswerController
             Response::error('Aucune réponse fournie');
         }
 
+        $rawLevel  = isset($body['user_level']) ? (int) $body['user_level'] : 0;
+        $userLevel = in_array($rawLevel, [5, 6, 7, 8], true) ? $rawLevel : null;
+
         try {
-            $responseId = Survey::save((int) $_SESSION['user_id'], $answers);
+            $responseId = Survey::save((int) $_SESSION['user_id'], $answers, $userLevel);
             Response::json(['id' => $responseId]);
         } catch (\Exception) {
             // Survey::save already rolled back the transaction on failure.
@@ -59,5 +66,15 @@ class AnswerController
     {
         $this->requireAuth();
         Response::json(Survey::getLast((int) $_SESSION['user_id']));
+    }
+
+    /**
+     * GET /me/tests — list every submission of the current user with the
+     * recomputed top formations. Drives the user account page (F8).
+     */
+    public function listMine(): void
+    {
+        $this->requireAuth();
+        Response::json(['tests' => Survey::listForUser((int) $_SESSION['user_id'])]);
     }
 }

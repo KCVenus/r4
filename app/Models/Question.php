@@ -99,17 +99,23 @@ class Question
      * The returned `id` is the question_key (string) rather than the numeric id —
      * the frontend uses it as a map key for answers.
      *
+     * @param bool $quickOnly When true, restrict to questions flagged for the
+     *                        short test (10-question subset). Default false =
+     *                        the full 30-question catalogue.
      * @return array Array of {id, text, options[]} objects.
      */
-    public static function getActive(): array
+    public static function getActive(bool $quickOnly = false): array
     {
         $pdo = Database::getInstance();
 
+        $where = 'active = 1';
+        if ($quickOnly) $where .= ' AND quick = 1';
+
         $questions = $pdo->query(
-            'SELECT id, question_key, text
+            "SELECT id, question_key, text
              FROM   questions
-             WHERE  active = 1
-             ORDER  BY sort_order, id'
+             WHERE  $where
+             ORDER  BY sort_order, id"
         )->fetchAll();
 
         $optionsStmt = $pdo->prepare(
