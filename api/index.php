@@ -44,7 +44,7 @@ $route  = trim($_GET['_route'] ?? '', '/');
 // ── Admin middleware ──────────────────────────────────────────────────────
 // Protect the /admin/* routes early, before any controller instantiation.
 // StatsController has its own requireAdmin() call because /stats isn't under /admin.
-$adminRoutes = ['admin/questions', 'admin/formations', 'admin/export'];
+$adminRoutes = ['admin/questions', 'admin/question', 'admin/formations', 'admin/export'];
 if (in_array($route, $adminRoutes, true)) {
     if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
         Response::error('Accès refusé', 403);
@@ -58,6 +58,7 @@ if (in_array($route, $adminRoutes, true)) {
 $csrfProtected = [
     ['POST', 'auth'], ['POST', 'answers'],
     ['POST', 'admin/questions'], ['PUT', 'admin/questions'], ['DELETE', 'admin/questions'],
+    ['PUT', 'admin/question'],
     ['POST', 'admin/formations'], ['PUT', 'admin/formations'], ['DELETE', 'admin/formations'],
 ];
 if (in_array([$method, $route], $csrfProtected, true)) {
@@ -92,6 +93,8 @@ try {
         ['POST',   'admin/questions']   => (new AdminController())->createQuestion(),
         ['PUT',    'admin/questions']   => (new AdminController())->updateQuestion(),
         ['DELETE', 'admin/questions']   => (new AdminController())->deleteQuestion(),
+        ['GET',    'admin/question']    => (new AdminController())->getQuestion(),
+        ['PUT',    'admin/question']    => (new AdminController())->saveQuestionFull(),
         ['GET',    'admin/formations']  => (new AdminController())->listFormations(),
         ['POST',   'admin/formations']  => (new AdminController())->createFormation(),
         ['PUT',    'admin/formations']  => (new AdminController())->updateFormation(),

@@ -1,8 +1,8 @@
 ---
-title: "Cahier des Charges Fonctionnel — R4 Application d'orientation"
+title: "Cahier des Charges Fonctionnel, R4 Application d'orientation"
 author: "Arthur Demoisson"
 formation: "Ingénieur Informatique et Multimédia"
-ecole: "CNAM Toulon — Université de Toulon"
+ecole: "CNAM Toulon, Université de Toulon"
 date: "28 avril 2026"
 ---
 
@@ -18,24 +18,21 @@ Ce CCF n'engage pas, à ce stade, de choix techniques d'implémentation. Les dé
 
 | Terme | Définition |
 |---|---|
-| **CCF** | Cahier des Charges Fonctionnel — document décrivant les besoins fonctionnels du commanditaire, indépendamment des choix d'implémentation. |
-| **CCT** | Cahier des Charges Technique — document décrivant les contraintes techniques, l'architecture retenue et les indicateurs de performance. |
-| **MA** | Maître d'Apprentissage — référent métier de l'apprenti en entreprise. |
-| **TA** | Tuteur Académique — référent pédagogique côté école. |
-| **MVP** | *Minimum Viable Product* — version minimale livrable d'un produit, suffisante pour collecter du retour utilisateur. |
+| **CCF** | Cahier des Charges Fonctionnel, document décrivant les besoins fonctionnels du commanditaire, indépendamment des choix d'implémentation. |
+| **CCT** | Cahier des Charges Technique, document décrivant les contraintes techniques, l'architecture retenue et les indicateurs de performance. |
+| **MA** | Maître d'Apprentissage, référent métier de l'apprenti en entreprise. |
+| **TA** | Tuteur Académique, référent pédagogique côté école. |
+| **MVP** | *Minimum Viable Product*, version minimale livrable d'un produit, suffisante pour collecter du retour utilisateur. |
 | **RGPD** | Règlement Général sur la Protection des Données. |
-| **WCAG** | *Web Content Accessibility Guidelines* — référentiel d'accessibilité numérique. |
-| **CSRF** | *Cross-Site Request Forgery* — attaque informatique exploitant la session d'un utilisateur authentifié. |
+| **WCAG** | *Web Content Accessibility Guidelines*, référentiel d'accessibilité numérique. |
+| **CSRF** | *Cross-Site Request Forgery*, attaque informatique exploitant la session d'un utilisateur authentifié. |
 | **RNCP** | Répertoire National des Certifications Professionnelles. Niveau RNCP : 5 (bac), 6 (bac+2), 7 (bac+3), 8 (bac+5+). |
 
 ## 1.3. Versions et révisions
 
 | Version | Date | Auteur | Modifications |
 |---|---|---|---|
-| 0.1 | 2026-03-15 | A. Demoisson | Première rédaction, structure générale et besoins métier. |
-| 0.5 | 2026-04-08 | A. Demoisson | Ajout des exigences non-fonctionnelles (RGPD, accessibilité, sobriété), revue MA. |
-| 0.9 | 2026-04-22 | A. Demoisson | Intégration des retours du Service Hub et du Service Communication, périmètre des 18 formations gelé. |
-| 1.0 | 2026-04-28 | A. Demoisson | Validation en réunion M1, version contractuelle. |
+| 1.0 | 2026-04-28 | A. Demoisson | Version contractuelle validée en réunion M1 (périmètre 18 formations CNAM PACA gelé, RGPD, accessibilité, sobriété). |
 
 # 2. Contexte du projet
 
@@ -43,15 +40,15 @@ Ce CCF n'engage pas, à ce stade, de choix techniques d'implémentation. Les dé
 
 Le commanditaire est le **Pôle Innovation du CNAM PACA**, cellule transverse du Conservatoire National des Arts et Métiers en région Provence-Alpes-Côte d'Azur. Le Pôle Innovation pilote des projets numériques courts à destination des autres services de l'établissement (Communication, Hub d'inscription, Responsables de formation, Service formations adultes), souvent portés par un unique chef de projet apprenti et appuyés par les compétences métier des services utilisateurs.
 
-L'écosystème numérique préexistant se compose principalement d'un site institutionnel vitrine, d'une plateforme de gestion des inscriptions, de quelques applications métier isolées et de l'infrastructure mutualisée du CNAM. La présente application s'inscrit dans cet écosystème : elle doit être autonome, utile par elle-même, compatible avec l'infrastructure existante, sans introduire de dépendances croisées coûteuses à maintenir.
+Le numérique existant se résume à un site vitrine, une plateforme d'inscriptions, quelques applications métier isolées et l'infrastructure mutualisée du CNAM PACA. La présente application doit y trouver sa place sans créer de dépendance croisée : autonome, utile par elle-même, compatible avec l'existant.
 
 ## 2.2. Les services parties prenantes
 
 Trois services métiers sont co-utilisateurs ou co-décisionnaires de la solution.
 
-- **Service Communication** — pilote la diffusion publique de l'application, notamment auprès des candidats potentiels rencontrés sur salons et journées portes ouvertes. Décide des messages d'incitation à l'usage et de la place de l'outil dans le tunnel d'acquisition.
-- **Service Hub d'inscription** — accueille les candidats orientés par l'application. Reçoit les demandes de contact et assure la prise de relais après le test. Sa charge opérationnelle dépend de la qualité de la pré-qualification réalisée par l'outil.
-- **Responsables de formation** — fournissent la matière première : descriptifs de formation, prérequis, débouchés, critères d'éligibilité. Valident la pertinence des questions du test pour la classification automatique. Réceptionnent les demandes de contact filées par formation.
+- **Service Communication**, pilote la diffusion publique de l'application, notamment auprès des candidats potentiels rencontrés sur salons et journées portes ouvertes. Décide des messages d'incitation à l'usage et de la place de l'outil dans le tunnel d'acquisition.
+- **Service Hub d'inscription**, accueille les candidats orientés par l'application. Reçoit les demandes de contact et assure la prise de relais après le test. Sa charge opérationnelle dépend de la qualité de la pré-qualification réalisée par l'outil.
+- **Responsables de formation**, fournissent la matière première : descriptifs de formation, prérequis, débouchés, critères d'éligibilité. Valident la pertinence des questions du test pour la classification automatique. Réceptionnent les demandes de contact filées par formation.
 
 Le Maître d'Apprentissage assure la coordination entre ces parties prenantes et arbitre les écarts d'interprétation. Le chef de projet (apprenti) anime les réunions de cadrage et porte la rédaction des livrables.
 
@@ -65,14 +62,14 @@ L'objectif fonctionnel exprimé est de **pré-qualifier numériquement** ce flux
 
 Le projet est conduit dans le cadre d'une 4<sup>e</sup> année d'apprentissage, ce qui impose plusieurs contraintes structurelles dont le CCF tient compte.
 
-- **Plages de présence alternées** — l'apprenti partage son temps entre l'école et l'entreprise selon un rythme de quinze jours. Le planning prévoit explicitement les semaines école comme des semaines de consolidation documentaire ou de développement asynchrone, et réserve les semaines entreprise aux ateliers, validations et déploiements.
-- **Disponibilité variable des interlocuteurs métier** — les Responsables de formation ont une charge d'enseignement prioritaire ; les ateliers de conception sont planifiés sur des créneaux groupés (réunions M2/M3) plutôt que diffus.
-- **Infrastructure mutualisée** — le déploiement repose sur les ressources serveur existantes ; toute introduction de dépendance externe nouvelle doit être justifiée et validée par l'administrateur système.
-- **Sobriété de moyens** — pas de budget logiciel dédié ; la solution doit reposer sur des outils libres ou déjà en place.
+- **Plages de présence alternées**, l'apprenti partage son temps entre l'école et l'entreprise selon un rythme de quinze jours. Le planning prévoit explicitement les semaines école comme des semaines de consolidation documentaire ou de développement asynchrone, et réserve les semaines entreprise aux ateliers, validations et déploiements.
+- **Disponibilité variable des interlocuteurs métier**, les Responsables de formation ont une charge d'enseignement prioritaire ; les ateliers de conception sont planifiés sur des créneaux groupés (réunions M2/M3) plutôt que diffus.
+- **Infrastructure mutualisée**, le déploiement repose sur les ressources serveur existantes ; toute introduction de dépendance externe nouvelle doit être justifiée et validée par l'administrateur système.
+- **Sobriété de moyens**, pas de budget logiciel dédié ; la solution doit reposer sur des outils libres ou déjà en place.
 
 ## 2.5. Cadre budgétaire et projection sur trois ans
 
-Le projet est conduit sans enveloppe budgétaire dédiée allouée par le commanditaire. La seule ligne de coût engagée est la **rémunération de l'apprenti chef de projet**, à hauteur de **1 100 € bruts mensuels** sur la durée du semestre. L'ensemble des autres briques (hébergement, base de données, outillage, certificats) repose sur des ressources déjà mutualisées au sein du CNAM PACA ou sur des outils libres sans coût d'acquisition. Cette absence de budget marketing ou logiciel dédié est constitutive de la posture de sobriété affichée en section 2.4 ; elle conditionne aussi les arbitrages techniques décrits ultérieurement (CCT §2.1).
+Le projet est conduit sans enveloppe budgétaire dédiée. Seule ligne engagée : la **rémunération de l'apprenti chef de projet**, **1 100 € bruts mensuels** sur la durée du semestre. Hébergement, base de données, outillage et certificats reposent sur des ressources déjà mutualisées au CNAM PACA ou sur des outils libres. Cette contrainte budgétaire conditionne les arbitrages techniques décrits dans le CCT (§2.1).
 
 ### 2.5.1. Ventilation du coût de réalisation v1
 
@@ -95,19 +92,19 @@ L'arbitrage entre développement sur mesure et solution du marché a été instr
 
 | Scénario | Coût année 1 | Coût récurrent annuel | TCO 3 ans |
 |---|---|---|---|
-| **R4 — interne, sur mesure (retenu)** | 3 300 € (apprenti) | ~1 000 € (maintenance estimée 1 j/mois × tarif interne) | **~5 300 €** |
+| **R4, interne, sur mesure (retenu)** | 3 300 € (apprenti) | ~1 000 € (maintenance estimée 1 j/mois × tarif interne) | **~5 300 €** |
 | SaaS chatbot d'orientation (Crisp, Intercom, Tally Pro) | 100 € / mois × 12 = 1 200 € | 1 200 € / an | 3 600 € + risque de hausse tarifaire |
 | Développement externalisé clé en main | 18 000 € (forfait moyen marché) | 2 500 € / an (tierce maintenance) | **~23 000 €** |
 
-Le scénario interne est légèrement plus coûteux que le SaaS sur trois ans, mais reste un ordre de grandeur en dessous de l'externalisation. Le surcoût face au SaaS est compensé par l'absence de dépendance contractuelle, l'autonomie complète sur la donnée (conformité RGPD facilitée), l'alignement strict au besoin métier (les SaaS génériques exigeraient des contournements), et la pérennité longue traîne (un SaaS abandonné ou racheté impose une migration coûteuse). Cette grille a été présentée et validée en réunion M1.
+Le scénario interne est légèrement plus coûteux que le SaaS sur trois ans, mais reste un ordre de grandeur en dessous de l'externalisation. Le surcoût face au SaaS est compensé par : aucune dépendance contractuelle, autonomie complète sur la donnée (conformité RGPD facilitée), alignement précis au besoin métier (un SaaS générique imposerait des contournements), pas de risque de migration forcée en cas d'arrêt ou rachat du fournisseur. Grille présentée et validée en réunion M1.
 
 ### 2.5.3. Coûts évités par la solution interne
 
 La quantification des coûts évités complète la justification budgétaire. Trois lignes ont été chiffrées indicativement.
 
-- **Temps conseiller économisé** — l'outil pré-qualifie en amont les contacts entrants, ce qui réduit le nombre d'appels téléphoniques de 15-30 minutes consacrés à du tri de profil. Une économie estimative de 30 minutes par contact pré-qualifié, sur une base raisonnable de plusieurs dizaines de contacts par mois, représente plusieurs jours de temps conseiller libérés par trimestre.
-- **Coûts d'opportunité d'abandon** — la fraction de candidats qui abandonnent faute de réponse rapide (cf. §2.3) est en partie convertie par le test, qui propose une orientation immédiate sans attendre la disponibilité d'un Responsable de formation.
-- **Coût de licence évité** — un SaaS générique (~1 200 € / an) n'est pas engagé.
+- **Temps conseiller économisé**, l'outil pré-qualifie les contacts entrants en amont, ce qui réduit la part des appels téléphoniques de 15-30 minutes consacrés à du tri de profil de premier niveau. Le bénéfice exact sera mesuré post-déploiement.
+- **Coûts d'opportunité d'abandon**, la fraction de candidats qui abandonnent faute de réponse rapide (cf. §2.3) est en partie convertie par le test, qui propose une orientation immédiate sans attendre la disponibilité d'un Responsable de formation.
+- **Coût de licence évité**, un SaaS générique (~1 200 € / an) n'est pas engagé.
 
 Ces économies ne sont pas garanties à ce stade ; leur validation interviendra dans l'évaluation post-déploiement (KPI de conversion test → contact, KPI de taux de complétion).
 
@@ -127,14 +124,14 @@ La solution adresse trois profils utilisateur distincts, chacun avec des droits,
 
 Le périmètre fonctionnel se structure autour de huit cas d'usage primaires. Chacun est instruit à la section 4 sous forme d'exigences détaillées.
 
-1. **UC-1 — Réaliser un test d'orientation anonyme.** Un visiteur déclare son niveau scolaire actuel, répond à une trentaine de questions thématiques et reçoit immédiatement à l'écran les formations CNAM les plus alignées avec son profil.
-2. **UC-2 — Demander à être contacté par une formation.** Depuis l'écran de résultat, le visiteur ouvre directement le client mail de son appareil, avec un message pré-rempli adressé au contact de la formation choisie.
-3. **UC-3 — Créer un compte et conserver son historique.** Un candidat s'inscrit, retrouve ses tests passés sur une page dédiée et peut comparer les résultats de plusieurs tentatives.
-4. **UC-4 — Consulter le catalogue des formations.** Le candidat connecté navigue librement dans le catalogue retenu, indépendamment du test, avec accès à la fiche officielle de chaque formation.
-5. **UC-5 — Re-passer un test ultérieurement.** Le candidat peut relancer un test à tout moment ; les résultats anciens restent visibles et datés.
-6. **UC-6 — Administrer les questions.** Un administrateur ajoute, modifie ou désactive des questions, des options, et leur pondération vis-à-vis des formations.
-7. **UC-7 — Administrer les formations.** Un administrateur ajoute, modifie ou désactive des formations dans le catalogue.
-8. **UC-8 — Exporter les réponses pour analyse.** Un administrateur télécharge l'historique anonymisé des réponses au format CSV pour des analyses qualitatives ou statistiques hors application.
+1. **UC-1, Réaliser un test d'orientation anonyme.** Un visiteur déclare son niveau scolaire actuel, répond à une trentaine de questions thématiques et reçoit immédiatement à l'écran les formations CNAM les plus alignées avec son profil.
+2. **UC-2, Demander à être contacté par une formation.** Depuis l'écran de résultat, le visiteur ouvre directement le client mail de son appareil, avec un message pré-rempli adressé au contact de la formation choisie.
+3. **UC-3, Créer un compte et conserver son historique.** Un candidat s'inscrit, retrouve ses tests passés sur une page dédiée et peut comparer les résultats de plusieurs tentatives.
+4. **UC-4, Consulter le catalogue des formations.** Le candidat connecté navigue librement dans le catalogue retenu, indépendamment du test, avec accès à la fiche officielle de chaque formation.
+5. **UC-5, Re-passer un test ultérieurement.** Le candidat peut relancer un test à tout moment ; les résultats anciens restent visibles et datés.
+6. **UC-6, Administrer les questions.** Un administrateur ajoute, modifie ou désactive des questions, des options, et leur pondération vis-à-vis des formations.
+7. **UC-7, Administrer les formations.** Un administrateur ajoute, modifie ou désactive des formations dans le catalogue.
+8. **UC-8, Exporter les réponses pour analyse.** Un administrateur télécharge l'historique anonymisé des réponses au format CSV pour des analyses qualitatives ou statistiques hors application.
 
 ## 3.3. Périmètre des formations couvert
 
@@ -161,7 +158,7 @@ Cette frontière est nette pour éviter le glissement de périmètre au cours de
 
 Les exigences sont regroupées par module fonctionnel. Chacune porte un identifiant stable, un libellé court, une priorité (rouge = bloquant, orange = important, jaune = qualité ou amélioration) et un critère d'acceptation testable.
 
-## 4.1. Module pré-test — déclaration de niveau
+## 4.1. Module pré-test, déclaration de niveau
 
 | ID | Libellé | Priorité | Critère d'acceptation |
 |---|---|---|---|
@@ -284,7 +281,7 @@ L'application vise la conformité au référentiel WCAG 2.1 niveau AA, principes
 
 ## 5.6. Sobriété numérique
 
-La sobriété est posée comme un principe directeur, pas une option.
+La sobriété est traitée comme une exigence, au même rang que la sécurité ou la performance.
 
 - **Pile technique légère** : aucune dépendance d'environnement de build lourd, aucun *bundler* JavaScript, aucun *framework* front-end. Le code livré au navigateur est servi tel qu'il est écrit.
 - **Pas de tracking** : aucun outil tiers, aucun script analytique tiers, aucun *pixel* publicitaire.
@@ -376,18 +373,18 @@ Les modifications postérieures à la version 1.0 de ce CCF font l'objet d'un av
 
 # 10. Annexes
 
-## Annexe A — Liste des dix-huit formations retenues
+## Annexe A, Liste des dix-huit formations retenues
 
 La liste complète, les codes officiels CNAM, les niveaux RNCP, les critères d'inclusion et les motifs d'exclusion sont détaillés dans le document `docs/scope-formations.md` versionné dans le dépôt du projet. Cinq formations en niveau 5, huit en niveau 6, cinq en niveau 7. Couverture des domaines : informatique, comptabilité, ressources humaines, commerce, gestion, BTP, électrotechnique, logistique, sanitaire et social.
 
-## Annexe B — Cartographie des questions vers les formations
+## Annexe B, Cartographie des questions vers les formations
 
 La pondération de chacune des trente questions vis-à-vis des dix-huit formations est définie dans la table de scoring du schéma de base de données (script `migration_v4_questions.sql`). Cette pondération est la matière première du moteur de recommandation et fait l'objet d'une revue annuelle conjointe avec les Responsables de formation.
 
-## Annexe C — Plan des réunions
+## Annexe C, Plan des réunions
 
 Le détail des six réunions formalisées (kickoff M1, ateliers de conception M2 et M3, comité de validation M4, roadmap M5, sync hebdomadaire M6) figure dans `MEETINGS.md`. Chaque réunion produit un compte-rendu archivé dans `docs/cr/AAAA-MM-JJ-MX.md`.
 
-## Annexe D — Glossaire complet
+## Annexe D, Glossaire complet
 
 Le glossaire complet des termes métier, techniques et acronymes employés dans la documentation projet figure dans le rapport R4, section dédiée. Le glossaire abrégé figure en § 1.2 du présent CCF.

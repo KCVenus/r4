@@ -1,8 +1,8 @@
 ---
-title: "Cahier des Charges Technique — R4 Application d'orientation"
+title: "Cahier des Charges Technique, R4 Application d'orientation"
 author: "Arthur Demoisson"
 formation: "Ingénieur Informatique et Multimédia"
-ecole: "CNAM Toulon — Université de Toulon"
+ecole: "CNAM Toulon, Université de Toulon"
 date: "4 mai 2026"
 ---
 
@@ -18,60 +18,57 @@ Là où le CCF répond à la question « *que doit faire la solution* ? », le C
 
 | Terme | Définition |
 |---|---|
-| **API** | *Application Programming Interface* — interface de programmation exposée par le serveur pour le client web. |
-| **CSP** | *Content Security Policy* — en-tête HTTP qui restreint les sources autorisées de scripts, styles, images. |
-| **CSRF** | *Cross-Site Request Forgery* — attaque exploitant la session d'un utilisateur authentifié pour soumettre une requête non désirée. |
-| **DDL / DML** | *Data Definition / Manipulation Language* — sous-ensembles de SQL (création de schéma vs manipulation de données). |
-| **HSTS** | *HTTP Strict Transport Security* — en-tête forçant le navigateur à utiliser HTTPS pour une durée donnée. |
+| **API** | *Application Programming Interface*, interface de programmation exposée par le serveur pour le client web. |
+| **CSP** | *Content Security Policy*, en-tête HTTP qui restreint les sources autorisées de scripts, styles, images. |
+| **CSRF** | *Cross-Site Request Forgery*, attaque exploitant la session d'un utilisateur authentifié pour soumettre une requête non désirée. |
+| **DDL / DML** | *Data Definition / Manipulation Language*, sous-ensembles de SQL (création de schéma vs manipulation de données). |
+| **HSTS** | *HTTP Strict Transport Security*, en-tête forçant le navigateur à utiliser HTTPS pour une durée donnée. |
 | **HTTP/2** | Version 2 du protocole HTTP, multiplexage de plusieurs requêtes sur une seule connexion TCP/TLS. |
 | **InnoDB** | Moteur de stockage transactionnel de MySQL ; supporte les contraintes d'intégrité référentielle. |
-| **PDO** | *PHP Data Objects* — couche d'abstraction d'accès aux bases de données en PHP, supportant les requêtes paramétrées. |
-| **RPO** | *Recovery Point Objective* — quantité maximale de données pouvant être perdues lors d'un incident. |
-| **RTO** | *Recovery Time Objective* — durée maximale d'indisponibilité acceptable d'un service. |
-| **SLA** | *Service Level Agreement* — engagement de niveau de service. |
-| **SLO** | *Service Level Objective* — objectif interne de niveau de service, plus strict que le SLA. |
-| **SPA** | *Single Page Application* — application web monopage rendue côté client. |
-| **TLS** | *Transport Layer Security* — protocole de chiffrement en transit (anciennement SSL). |
-| **TTFB** | *Time To First Byte* — délai entre la requête HTTP et la réception du premier octet de réponse. |
-| **UTC** | *Universal Time Coordinated* — temps universel coordonné, fuseau de référence des horodatages. |
-| **vhost** | *Virtual Host* — configuration nginx déclarant un service web pour un nom de domaine donné. |
-| **XSS** | *Cross-Site Scripting* — injection de code script malveillant dans une page consultée par d'autres utilisateurs. |
+| **PDO** | *PHP Data Objects*, couche d'abstraction d'accès aux bases de données en PHP, supportant les requêtes paramétrées. |
+| **RPO** | *Recovery Point Objective*, quantité maximale de données pouvant être perdues lors d'un incident. |
+| **RTO** | *Recovery Time Objective*, durée maximale d'indisponibilité acceptable d'un service. |
+| **SLA** | *Service Level Agreement*, engagement de niveau de service. |
+| **SLO** | *Service Level Objective*, objectif interne de niveau de service, plus strict que le SLA. |
+| **SPA** | *Single Page Application*, application web monopage rendue côté client. |
+| **TLS** | *Transport Layer Security*, protocole de chiffrement en transit (anciennement SSL). |
+| **TTFB** | *Time To First Byte*, délai entre la requête HTTP et la réception du premier octet de réponse. |
+| **UTC** | *Universal Time Coordinated*, temps universel coordonné, fuseau de référence des horodatages. |
+| **vhost** | *Virtual Host*, configuration nginx déclarant un service web pour un nom de domaine donné. |
+| **XSS** | *Cross-Site Scripting*, injection de code script malveillant dans une page consultée par d'autres utilisateurs. |
 
 ## 1.3. Versions et révisions
 
 | Version | Date | Auteur | Modifications |
 |---|---|---|---|
-| 0.1 | 2026-04-12 | A. Demoisson | Première rédaction, architecture cible et modèle de données. |
-| 0.5 | 2026-04-22 | A. Demoisson | Ajout des sections sécurité, conformité RGPD et indicateurs de performance. |
-| 0.9 | 2026-04-30 | A. Demoisson | Intégration du retour d'expérience preprod (vhost, certificat, schéma DB v3-v5). |
-| 1.0 | 2026-05-04 | A. Demoisson | Validation en revue technique, version contractuelle. |
+| 1.0 | 2026-05-04 | A. Demoisson | Version contractuelle validée en revue technique (architecture, modèle de données, sécurité, RGPD, KPI, plan d'évolution). |
 
 ## 1.4. Documents de référence
 
 | Référence | Document |
 |---|---|
 | CCF-R4 | Cahier des Charges Fonctionnel R4, version 1.0 du 28 avril 2026. |
-| PLANNING | `PLANNING.md` versionné dans le dépôt Git du projet — état d'avancement vivant. |
-| INSTALL | `INSTALL.md` — procédure d'installation et d'exploitation pas à pas. |
-| MEETINGS | `MEETINGS.md` — comitologie et template de compte rendu. |
-| SCOPE | `docs/scope-formations.md` — périmètre des 18 formations CNAM PACA retenues. |
-| RGPD-EU | Règlement (UE) 2016/679 — Règlement Général sur la Protection des Données. |
-| WCAG-2.1 | *Web Content Accessibility Guidelines* 2.1 niveau AA — référentiel d'accessibilité numérique du W3C. |
-| OWASP-T10 | *OWASP Top 10* (2021) — référentiel des dix risques de sécurité applicative web les plus critiques. |
+| PLANNING | `PLANNING.md` versionné dans le dépôt Git du projet, état d'avancement vivant. |
+| INSTALL | `INSTALL.md`, procédure d'installation et d'exploitation pas à pas. |
+| MEETINGS | `MEETINGS.md`, comitologie et template de compte rendu. |
+| SCOPE | `docs/scope-formations.md`, périmètre des 18 formations CNAM PACA retenues. |
+| RGPD-EU | Règlement (UE) 2016/679, Règlement Général sur la Protection des Données. |
+| WCAG-2.1 | *Web Content Accessibility Guidelines* 2.1 niveau AA, référentiel d'accessibilité numérique du W3C. |
+| OWASP-T10 | *OWASP Top 10* (2021), référentiel des dix risques de sécurité applicative web les plus critiques. |
 
 # 2. Cadre technique général
 
-## 2.1. Posture technique adoptée
+## 2.1. Choix technique général
 
-La solution repose sur une posture délibérée de **sobriété logicielle** : aucun framework côté serveur, aucun framework côté client, aucun gestionnaire de paquets exécuté à l'installation. Cette posture n'est pas une absence de choix mais un choix structurant qui découle de quatre observations.
+La pile retenue est **PHP vanilla + MySQL + nginx**, sans framework côté serveur, sans framework côté client, sans gestionnaire de paquets. Quatre raisons.
 
-D'abord, le périmètre fonctionnel décrit dans le CCF — un test à choix binaire, un calcul de score, un tableau d'administration CRUD, un export CSV — ne mobilise aucune fonctionnalité avancée que l'écriture en PHP natif et SQL standard ne permettrait pas d'exprimer en quelques fichiers. La complexité d'un framework serait, dans ce contexte, une dépendance sans contrepartie.
+D'abord, le périmètre fonctionnel (test binaire, calcul de score, CRUD admin, export CSV) ne mobilise rien que PHP natif et SQL standard ne fassent en quelques fichiers. Un framework apporterait surtout de la complexité.
 
-Ensuite, la maintenabilité par les équipes internes du Pôle Innovation est une exigence du commanditaire. Un développeur PHP/MySQL classique reprend la solution sans formation préalable ; un développeur formé à un framework spécifique l'aurait recodée à sa façon dès la première intervention significative.
+Ensuite, la maintenabilité par les équipes internes est une exigence du commanditaire. Un développeur PHP/MySQL classique reprend la solution sans formation préalable.
 
-Par ailleurs, l'hébergement mutualisé du CNAM PACA n'autorise pas l'installation de runtimes additionnels ni l'exécution d'outillages côté serveur (Composer, npm, build pipeline). PHP 8.5 et MySQL 8.4 sont disponibles ; les fonctionnalités modernes du langage (types stricts, *match expressions*, attributs, *named arguments*) sont exploitées dans le code, ce qui dispense de simuler des constructions par des bibliothèques.
+L'hébergement mutualisé n'autorise pas l'installation de runtimes additionnels ni d'outillages côté serveur (Composer, npm, build pipeline). PHP 8.5 et MySQL 8.4 sont disponibles ; les fonctionnalités modernes du langage (types stricts, `match`, attributs, `enum`) sont utilisées directement.
 
-Enfin, la sobriété énergétique mise en avant dans le CCF (≤ 200 ko transférés par page) est mécaniquement compromise par toute pile JavaScript moderne : React, Vue ou Angular livrent à eux seuls plusieurs centaines de kilo-octets minifiés avant la moindre ligne d'application. Le choix du *vanilla JavaScript* n'est donc pas un archaïsme mais un alignement explicite à une exigence non-fonctionnelle structurante.
+Enfin, l'objectif sobriété (≤ 200 ko transférés par page, fixé au CCF) est incompatible avec une pile JavaScript moderne : React, Vue ou Angular livrent à eux seuls plusieurs centaines de kilo-octets avant la moindre ligne d'application.
 
 ## 2.2. Pile technologique retenue
 
@@ -87,17 +84,17 @@ Enfin, la sobriété énergétique mise en avant dans le CCF (≤ 200 ko transf�
 | Versionnement | Git + GitHub | dernière | Hébergement du code, intégration native avec le suivi de projet (issues, releases, kanban). |
 | Intégration continue | GitHub Actions | dernière | Déclenchement à chaque *push*, gratuit pour dépôts privés du commanditaire. |
 
-## 2.3. Choix structurants documentés
+## 2.3. Décisions documentées
 
-Plusieurs décisions structurantes méritent d'être tracées explicitement dans ce document, car elles conditionnent l'évolutivité et la maintenance ultérieures.
+Quatre décisions doivent être tracées ici car elles conditionnent l'évolutivité et la maintenance.
 
-**Pas de framework PHP** — argumenté en section 2.1. La contrepartie assumée est un volume de code applicatif légèrement supérieur à ce qu'aurait produit Symfony ou Laravel pour les mêmes fonctionnalités. Cette contrepartie est compensée par la lisibilité (zéro magie d'autoloading, routage explicite dans `api/index.php`, dépendances déclarées en haut de chaque fichier).
+**Pas de framework PHP** (cf. §2.1). Contrepartie : un peu plus de code à écrire à la main pour certaines briques génériques (routing, validation). Compensé par la lisibilité : pas de magie d'autoloading, routage explicite dans `api/index.php`, dépendances déclarées en haut de chaque fichier.
 
-**Pas de gestionnaire de paquets** — l'absence de Composer ou de npm signifie que toute dépendance externe doit être copiée manuellement dans le dépôt. Cette friction délibérée empêche l'ajout impulsif de bibliothèques tierces et oblige à instruire chaque introduction. Au moment de la rédaction, le projet ne contient aucune dépendance externe.
+**Pas de gestionnaire de paquets**. Toute dépendance externe doit être copiée manuellement dans le dépôt. Cette friction est volontaire : elle empêche l'ajout impulsif de bibliothèques tierces et oblige à instruire chaque introduction. À ce jour, zéro dépendance externe.
 
-**Pas d'envoi de mail côté serveur** — la prise de contact entre le candidat et la formation passe par un lien `mailto:` ouvert dans le client mail natif du terminal de l'utilisateur. Cette décision élimine la dépendance à un serveur SMTP, supprime un secret à gérer, retire une surface d'attaque (relais ouvert, *bounce*, listes noires) et laisse l'utilisateur maître de l'identité émettrice du message. La contrepartie — pas d'archivage centralisé des contacts — est jugée acceptable au regard du gain de simplicité et de conformité.
+**Pas d'envoi de mail côté serveur**. La prise de contact passe par un lien `mailto:` ouvert dans le client mail natif du candidat. Avantages : pas de dépendance à un serveur SMTP, pas de secret SMTP à gérer, pas de surface d'attaque (relais ouvert, bounces, listes noires), candidat maître de l'identité émettrice. Contrepartie acceptée : pas d'archivage centralisé des contacts.
 
-**Pas de cookies de suivi tiers** — aucune solution analytique tierce (Google Analytics, Matomo hébergé hors site) n'est intégrée. Les indicateurs définis en section 8 reposent exclusivement sur les logs applicatifs et les requêtes SQL, ce qui simplifie la conformité RGPD et supprime une source de fuite de données comportementales.
+**Pas de cookies de suivi tiers**. Aucune solution analytique tierce (Google Analytics, Matomo hors site). Les indicateurs de §8 reposent uniquement sur les logs applicatifs et les requêtes SQL, ce qui simplifie la conformité RGPD.
 
 # 3. Architecture applicative
 
@@ -129,7 +126,7 @@ r4/
 │                           sans accès BDD ; cible des sondes externes.
 ├── api/
 │   ├── index.php           Routeur HTTP unique (front controller).
-│   └── .htaccess           Réécriture vers index.php (Apache) — référence ;
+│   └── .htaccess           Réécriture vers index.php (Apache), référence ;
 │                           équivalent nginx en production (cf. §6).
 ├── app/
 │   ├── Core/
@@ -272,16 +269,16 @@ Le modèle de menace retenu cible explicitement les risques applicatifs du réf�
 
 | Risque OWASP | Pertinence | Mitigation effective dans le projet |
 |---|---|---|
-| A01 — Broken Access Control | Élevée | *Middleware* `admin/*` dans le routeur, `$_SESSION['role']` vérifié, pas de référence directe à l'identifiant dans les routes utilisateur. |
-| A02 — Cryptographic Failures | Élevée | Mots de passe stockés via `password_hash()` (bcrypt) ; cookies de session `Secure` en HTTPS ; tokens CSRF générés par `random_bytes(32)`. |
-| A03 — Injection | Critique | Requêtes 100 % paramétrées via PDO ; aucune concaténation SQL avec entrée client ; `.htaccess` interdit l'exécution PHP en dehors de `api/`. |
-| A04 — Insecure Design | Moyenne | Périmètre minimal (pas d'envoi mail, pas de cookies tiers, pas de bibliothèques transitives) ; gardes explicites en début de routeur. |
-| A05 — Security Misconfiguration | Élevée | `display_errors=0` en prod, `log_errors=1`, en-têtes de sécurité (`X-Content-Type-Options`, `X-Frame-Options`, CSP) au niveau nginx. |
-| A06 — Vulnerable Components | Faible | Aucune dépendance externe applicative ; PHP/MySQL/nginx maintenus par les paquets du système d'exploitation. |
-| A07 — Identification and Auth Failures | Élevée | *Rate limiting* sur `/api/auth` (compteur de tentatives en session) ; sessions régénérées à la connexion (`session_regenerate_id(true)`). |
-| A08 — Software and Data Integrity | Moyenne | CI sur chaque *push* (`php -l` + garde-fous de motifs interdits) ; pas de mises à jour automatiques côté code applicatif. |
-| A09 — Security Logging Failures | Moyenne | `error_log` PHP redirigé vers fichier en prod ; logs d'accès nginx archivés ; logs CSRF/auth sont enregistrés en cas d'échec. |
-| A10 — Server-Side Request Forgery | Sans objet | L'application n'effectue aucune requête sortante depuis le serveur. |
+| A01, Broken Access Control | Élevée | *Middleware* `admin/*` dans le routeur, `$_SESSION['role']` vérifié, pas de référence directe à l'identifiant dans les routes utilisateur. |
+| A02, Cryptographic Failures | Élevée | Mots de passe stockés via `password_hash()` (bcrypt) ; cookies de session `Secure` en HTTPS ; tokens CSRF générés par `random_bytes(32)`. |
+| A03, Injection | Critique | Requêtes 100 % paramétrées via PDO ; aucune concaténation SQL avec entrée client ; `.htaccess` interdit l'exécution PHP en dehors de `api/`. |
+| A04, Insecure Design | Moyenne | Périmètre minimal (pas d'envoi mail, pas de cookies tiers, pas de bibliothèques transitives) ; gardes explicites en début de routeur. |
+| A05, Security Misconfiguration | Élevée | `display_errors=0` en prod, `log_errors=1`, en-têtes de sécurité (`X-Content-Type-Options`, `X-Frame-Options`, CSP) au niveau nginx. |
+| A06, Vulnerable Components | Faible | Aucune dépendance externe applicative ; PHP/MySQL/nginx maintenus par les paquets du système d'exploitation. |
+| A07, Identification and Auth Failures | Élevée | *Rate limiting* sur `/api/auth` (compteur de tentatives en session) ; sessions régénérées à la connexion (`session_regenerate_id(true)`). |
+| A08, Software and Data Integrity | Moyenne | CI sur chaque *push* (`php -l` + garde-fous de motifs interdits) ; pas de mises à jour automatiques côté code applicatif. |
+| A09, Security Logging Failures | Moyenne | `error_log` PHP redirigé vers fichier en prod ; logs d'accès nginx archivés ; logs CSRF/auth sont enregistrés en cas d'échec. |
+| A10, Server-Side Request Forgery | Sans objet | L'application n'effectue aucune requête sortante depuis le serveur. |
 
 ## 5.2. Authentification et gestion des sessions
 
@@ -334,7 +331,7 @@ Le fichier `database/setup.php` (script d'initialisation) est exécutable une se
 
 ## 5.7. Gestion des secrets
 
-Les secrets de l'application — mot de passe de base de données, clé de signature éventuelle, identifiants d'administrateur de bootstrap — résident dans un fichier `.env` à la racine du dépôt, jamais commité (présent dans `.gitignore`). Le fichier est lu au démarrage par `config/config.php` qui peuple `$_ENV`. En environnement de production ou de pré-production, les variables peuvent alternativement être définies au niveau du système (Apache `SetEnv`, systemd `EnvironmentFile`, ou variable d'environnement nginx-PHP-FPM), ce qui est la posture recommandée dès qu'un déploiement automatisé est en place.
+Les secrets (mot de passe BDD, clé de signature éventuelle, identifiants d'administrateur de bootstrap) résident dans un fichier `.env` à la racine du dépôt, jamais commité (`.gitignore`). Lu au démarrage par `config/config.php` qui peuple `$_ENV`. En production ou pré-production, les variables peuvent alternativement être définies au niveau système (Apache `SetEnv`, systemd `EnvironmentFile`, ou variable nginx-PHP-FPM), recommandé dès qu'un déploiement automatisé est en place.
 
 L'inventaire des secrets est tenu hors-dépôt dans le coffre `pass` du chef de projet ; une copie de procédure de rotation des secrets est consignée dans `INSTALL.md`.
 
@@ -374,10 +371,10 @@ Une supervision externe minimale (cron quotidien interrogeant `openssl s_client`
 
 Le déploiement suit un processus en quatre étapes, exécutées manuellement par le chef de projet à ce stade du projet (volume d'évolutions modeste, automatisation prématurée).
 
-1. **Validation en pré-production** — la branche de fonctionnalité est mergée sur `preprod`, le serveur de pré-production est resynchronisé (`git pull`), les migrations SQL pertinentes sont appliquées sur la base de pré-production, le parcours utilisateur clé est rejoué en navigateur.
-2. **Revue technique** — relecture de la PR par le chef de projet sur GitHub, vérification des résultats de la CI (`php -l`, motifs interdits, ancres HTML/CSS).
-3. **Merge en production** — la PR est mergée sur `master`, le *checkout* du serveur est resynchronisé sur `master`. Le cache CDN est invalidé par bump de la chaîne `?v=...` sur les liens vers `style.css` et `app.js`.
-4. **Smoke test post-déploiement** — la page d'accueil prod (`https://r4.ohvenus.fr`) répond 200 ; la route `GET /api/csrf` retourne un jeton ; un test rapide de bout en bout est effectué.
+1. **Validation en pré-production**, la branche de fonctionnalité est mergée sur `preprod`, le serveur de pré-production est resynchronisé (`git pull`), les migrations SQL pertinentes sont appliquées sur la base de pré-production, le parcours utilisateur clé est rejoué en navigateur.
+2. **Revue technique**, relecture de la PR par le chef de projet sur GitHub, vérification des résultats de la CI (`php -l`, motifs interdits, ancres HTML/CSS).
+3. **Merge en production**, la PR est mergée sur `master`, le *checkout* du serveur est resynchronisé sur `master`. Le cache CDN est invalidé par bump de la chaîne `?v=...` sur les liens vers `style.css` et `app.js`.
+4. **Smoke test post-déploiement**, la page d'accueil prod (`https://r4.ohvenus.fr`) répond 200 ; la route `GET /api/csrf` retourne un jeton ; un test rapide de bout en bout est effectué.
 
 Toute migration de schéma destructive (par exemple suppression de colonne, renommage) est précédée d'une sauvegarde manuelle de la base via `mysqldump`. Les migrations purement additives (ajout de colonne avec valeur par défaut, ajout de table) sont appliquées sans sauvegarde supplémentaire en s'appuyant sur la sauvegarde mutualisée quotidienne (cf. §6.5).
 
@@ -422,7 +419,7 @@ L'application n'engage **aucun coût récurrent direct** au-delà des ressources
 | Dépendances logicielles | Aucune (cf. §2.3) | 0 € |
 | **Total OPEX hors RH** | | **0 €** |
 
-L'absence de coût logiciel ou d'infrastructure récurrent est une conséquence directe de la posture de sobriété décrite en section 2.1 et constitue un argument structurant face à toute solution SaaS alternative.
+Aucun coût logiciel ni infrastructure récurrent : conséquence directe des choix de §2.1, et argument poids face à une solution SaaS équivalente.
 
 ### 6.7.2. Charge de maintenance estimée
 
@@ -432,12 +429,12 @@ Une charge plus élevée (jusqu'à 3 jours par mois) doit être anticipée sur l
 
 ### 6.7.3. Conditions de sortie et coûts associés
 
-La sortie de la solution — par migration vers un autre outil, par arrêt du service ou par changement d'hébergement — n'engage aucun coût contractuel (pas d'abonnement, pas d'engagement de durée). Les seuls coûts à anticiper en cas de sortie seraient :
+La sortie de la solution, par migration vers un autre outil, par arrêt du service ou par changement d'hébergement, n'engage aucun coût contractuel (pas d'abonnement, pas d'engagement de durée). Les seuls coûts à anticiper en cas de sortie seraient :
 
 - Une charge ponctuelle estimée à **2 à 5 jours-homme** pour exporter les données utilisateur (les routes d'export sont prévues, cf. §10.1) et les transférer vers la solution cible.
 - Le délai de communication aux utilisateurs et le traitement des éventuelles demandes RGPD résiduelles (suppression définitive, transmission d'archive personnelle).
 
-Aucun coût de pénalité, de licence résiduelle ou de réversibilité fournisseur n'est en jeu, ce qui constitue une caractéristique non triviale comparativement à un déploiement SaaS standard.
+Aucun coût de pénalité, de licence résiduelle ou de réversibilité fournisseur, contrairement à un déploiement SaaS standard.
 
 # 7. Performance, sobriété et observabilité
 
@@ -458,14 +455,14 @@ Ces indicateurs sont contractuels : tout dépassement sur deux mois consécutifs
 
 ## 7.2. Sobriété numérique
 
-L'application s'inscrit dans une démarche de sobriété numérique explicite. Quatre engagements quantifiables sont déclarés et mesurés.
+Quatre engagements de sobriété numérique, mesurables.
 
 - **Poids transféré** maintenu sous 200 ko par page (cf. tableau §7.1). Toute évolution qui porterait une page au-dessus de 400 ko fait l'objet d'une revue explicite avant merge.
 - **Aucune dépendance externe** côté client : pas de polices web (système uniquement), pas de bibliothèques JavaScript tierces, pas d'images bitmap décoratives. Les rares images proviennent du dépôt et sont optimisées en SVG ou en WebP léger.
 - **Aucun service externe** appelé côté client (pas d'analytique, pas de *plugins* sociaux, pas de pixel publicitaire). Toute requête sortante d'une page de l'application irait à `r4.ohvenus.fr` exclusivement.
 - **Aucune requête côté serveur** vers des services externes (pas de webhook sortant, pas de relais SMTP, pas de récupération d'asset distant). L'application est entièrement autonome.
 
-Ces engagements ne relèvent pas du discours mais du contrôle : les outils de mesure du navigateur (onglet *Network*, *Lighthouse*) permettent à tout instant de vérifier le respect des seuils, et la posture de sobriété est intégrée à la grille de revue avant chaque livraison.
+Vérification : outils de mesure du navigateur (onglet *Network*, *Lighthouse*). La grille de revue avant livraison inclut un contrôle des seuils.
 
 ## 7.3. Journalisation
 
@@ -500,7 +497,7 @@ L'application met en œuvre **un traitement principal** de données à caractèr
 | Catégories de données collectées | Identifiant utilisateur, mot de passe haché, adresse email (optionnelle), réponses au test, niveau scolaire déclaré, horodatage. |
 | Catégories de personnes concernées | Visiteurs publics du site, candidats inscrits, administrateurs internes du Pôle Innovation. |
 | Destinataires | Personnel habilité du Pôle Innovation pour l'export agrégé ; aucune transmission à un tiers. |
-| Durée de conservation | 24 mois après la dernière connexion pour les comptes utilisateur ; 24 mois après création pour les sessions anonymes (en pratique : aucune session anonyme stockée — cf. §4.1). |
+| Durée de conservation | 24 mois après la dernière connexion pour les comptes utilisateur ; 24 mois après création pour les sessions anonymes (en pratique : aucune session anonyme stockée, cf. §4.1). |
 | Mesures de sécurité | Cf. chapitre 5 du présent document. |
 | Transferts hors UE | Aucun. Hébergement intégral en France. |
 
@@ -510,11 +507,11 @@ Le registre est mis à jour à chaque évolution susceptible de l'affecter (ajou
 
 Les principes de *privacy by design* du RGPD ont été appliqués dès la conception, et non ajoutés a posteriori.
 
-- **Minimisation** — les données collectées sont strictement nécessaires à la fonction. Aucune adresse postale, aucun numéro de téléphone, aucune date de naissance ne sont demandés.
-- **Pseudonymisation** — l'export CSV à destination des Responsables de formation est expurgé du nom d'utilisateur et de l'adresse email. Les lignes sont identifiées par un identifiant numérique stable mais non ré-identifiable hors de la base.
-- **Confidentialité par défaut** — un compte nouvellement créé n'expose aucune donnée publique ; les pages d'espace personnel sont strictement réservées au propriétaire.
-- **Sécurité de bout en bout** — chiffrement TLS obligatoire en transit (HSTS), mots de passe hachés au repos, sessions durcies (cf. §5.2).
-- **Suppression effective** — la cascade `ON DELETE CASCADE` garantit qu'une suppression de compte purge l'intégralité des données associées en une seule opération atomique.
+- **Minimisation**, les données collectées sont strictement nécessaires à la fonction. Aucune adresse postale, aucun numéro de téléphone, aucune date de naissance ne sont demandés.
+- **Pseudonymisation**, l'export CSV à destination des Responsables de formation est expurgé du nom d'utilisateur et de l'adresse email. Les lignes sont identifiées par un identifiant numérique stable mais non ré-identifiable hors de la base.
+- **Confidentialité par défaut**, un compte nouvellement créé n'expose aucune donnée publique ; les pages d'espace personnel sont strictement réservées au propriétaire.
+- **Sécurité de bout en bout**, chiffrement TLS obligatoire en transit (HSTS), mots de passe hachés au repos, sessions durcies (cf. §5.2).
+- **Suppression effective**, la cascade `ON DELETE CASCADE` garantit qu'une suppression de compte purge l'intégralité des données associées en une seule opération atomique.
 
 ## 8.3. Droits des personnes concernées
 
@@ -543,10 +540,10 @@ L'application vise la conformité au **référentiel WCAG 2.1 niveau AA**, qui c
 
 Les quatre principes du référentiel sont traités explicitement.
 
-- **Perceptibilité** — contrastes vérifiés au-dessus de 4,5:1 pour le texte courant et 3:1 pour les éléments d'interface, taille de texte minimale de 16 pixels sur mobile, possibilité de zoom à 200 % sans perte de fonctionnalité.
-- **Utilisabilité** — navigation au clavier sur tous les parcours principaux, focus visible (anneau bleu), aucune action déclenchée par le seul mouvement de la souris, temporisations désactivables.
-- **Compréhensibilité** — interface uniformément en français, niveau de lecture B2 visé, libellés clairs sans jargon administratif, messages d'erreur explicites avec proposition d'action corrective.
-- **Robustesse** — code HTML5 valide, attributs ARIA utilisés à bon escient (boutons `aria-label` sur le bouton « Retour », champs de formulaire associés à leur étiquette, *progress bar* avec `role`, `aria-valuemin`, `aria-valuemax`, `aria-valuenow`).
+- **Perceptibilité**, contrastes vérifiés au-dessus de 4,5:1 pour le texte courant et 3:1 pour les éléments d'interface, taille de texte minimale de 16 pixels sur mobile, possibilité de zoom à 200 % sans perte de fonctionnalité.
+- **Utilisabilité**, navigation au clavier sur tous les parcours principaux, focus visible (anneau bleu), aucune action déclenchée par le seul mouvement de la souris, temporisations désactivables.
+- **Compréhensibilité**, interface uniformément en français, niveau de lecture B2 visé, libellés clairs sans jargon administratif, messages d'erreur explicites avec proposition d'action corrective.
+- **Robustesse**, code HTML5 valide, attributs ARIA utilisés à bon escient (boutons `aria-label` sur le bouton « Retour », champs de formulaire associés à leur étiquette, *progress bar* avec `role`, `aria-valuemin`, `aria-valuemax`, `aria-valuenow`).
 
 ## 9.2. Outils de contrôle
 
@@ -554,7 +551,7 @@ Le contrôle d'accessibilité s'effectue par combinaison d'outils automatisés e
 
 - **Audit automatisé** par l'extension *axe-core* du navigateur, exécutée sur chaque page principale avant livraison. Tout *issue* de niveau *critical* ou *serious* est résolu avant merge ; les niveaux *moderate* et *minor* alimentent le backlog.
 - **Vérification de contraste** par l'inspecteur de contraste intégré à Firefox sur les composants stylés.
-- **Test au clavier** systématique : démarrage du test, navigation entre vues, soumission de réponses, accès au compte — tous sans la souris.
+- **Test au clavier** systématique : démarrage du test, navigation entre vues, soumission de réponses, accès au compte, tous sans la souris.
 - **Test au lecteur d'écran** : passages réguliers avec NVDA (sous Windows en machine virtuelle) sur les écrans de connexion, de question et de résultat.
 - **Test en conditions de vision réduite** : simulation de daltonisme via les filtres natifs de Chrome DevTools, pour vérifier que la signalétique ne repose pas exclusivement sur la couleur.
 
@@ -596,19 +593,19 @@ La Phase 5, postérieure à la livraison école, intègre déjà un ensemble d'�
 
 Plusieurs évolutions ont été délibérément écartées du périmètre v1 mais figurent à la prospective technique.
 
-- **Single Sign-On établissement** — intégration au futur annuaire SSO du CNAM PACA, à condition que ce dernier soit ouvert aux applications du Pôle Innovation. Réduirait la dette d'authentification locale.
-- **Internationalisation** — extraction des chaînes en fichiers de langue, mécanisme de bascule via préférence utilisateur. À envisager si une demande s'exprime au-delà du périmètre francophone.
-- **Application mobile native** — non envisagée à court terme, la version *responsive* étant jugée suffisante. Une *Progressive Web App* (PWA) constitue une étape intermédiaire envisageable à coût modéré (manifest, service worker minimal, prompt d'installation).
-- **Statistiques publiques agrégées** — *dashboard* institutionnel présentant les tendances du test (formations les plus recommandées, profil des candidats). Suppose une revue d'opportunité côté Communication et un travail de pseudonymisation supplémentaire.
-- **Revue annuelle du scoring** — engagement pris dans le CCF (§ Annexe B) d'organiser une revue conjointe avec les Responsables de formation pour ajuster la pondération des trente questions vis-à-vis des dix-huit formations. Le compte rendu de cette revue sera versionné dans `docs/cr/` (réunion type M3 récurrente annuelle), avec migration SQL associée si la pondération évolue.
+- **Single Sign-On établissement**, intégration au futur annuaire SSO du CNAM PACA, à condition que ce dernier soit ouvert aux applications du Pôle Innovation. Réduirait la dette d'authentification locale.
+- **Internationalisation**, extraction des chaînes en fichiers de langue, mécanisme de bascule via préférence utilisateur. À envisager si une demande s'exprime au-delà du périmètre francophone.
+- **Application mobile native**, non envisagée à court terme, la version *responsive* étant jugée suffisante. Une *Progressive Web App* (PWA) constitue une étape intermédiaire envisageable à coût modéré (manifest, service worker minimal, prompt d'installation).
+- **Statistiques publiques agrégées**, *dashboard* institutionnel présentant les tendances du test (formations les plus recommandées, profil des candidats). Suppose une revue d'opportunité côté Communication et un travail de pseudonymisation supplémentaire.
+- **Revue annuelle du scoring**, engagement pris dans le CCF (§ Annexe B) d'organiser une revue conjointe avec les Responsables de formation pour ajuster la pondération des trente questions vis-à-vis des dix-huit formations. Le compte rendu de cette revue sera versionné dans `docs/cr/` (réunion type M3 récurrente annuelle), avec migration SQL associée si la pondération évolue.
 
 ## 10.3. Critères de bascule vers une refonte technique
 
-Une refonte plus structurante (introduction d'un framework PHP, séparation API / front, montée en puissance des outils d'observabilité) ne se justifierait que si plusieurs des seuils suivants étaient durablement franchis :
+Une refonte de fond (framework PHP, séparation API / front, observabilité poussée) ne se justifierait que si plusieurs seuils suivants étaient durablement franchis :
 
 - Plus de cinq mille tests réalisés par mois, mesuré sur trois mois consécutifs.
 - Plus de cinquante administrateurs distincts, ce qui complexifierait significativement la gestion des autorisations.
-- Demandes fonctionnelles structurantes incompatibles avec l'architecture actuelle (workflow multi-étapes, intégration temps réel à la plateforme d'inscription, internationalisation de l'administration).
+- Demandes fonctionnelles lourdes incompatibles avec l'architecture actuelle (workflow multi-étapes, intégration temps réel à la plateforme d'inscription, internationalisation de l'administration).
 - Charge opérationnelle de maintenance dépassant un demi-équivalent temps plein.
 
 Aucun de ces seuils n'est atteint à ce jour. La pile actuelle reste donc le bon outil pour le besoin tel qu'il est exprimé.
@@ -655,7 +652,7 @@ La réversibilité de la solution est elle-même un critère technique : à tout
 
 # 12. Annexes
 
-## Annexe A — Diagramme d'architecture (textuel)
+## Annexe A, Diagramme d'architecture (textuel)
 
 ```
                      ┌──────────────────┐
@@ -682,7 +679,7 @@ La réversibilité de la solution est elle-même un critère technique : à tout
                      └──────────────────┘
 ```
 
-## Annexe B — Inventaire des routes API
+## Annexe B, Inventaire des routes API
 
 | Méthode | Route | Authentification | Description |
 |---|---|---|---|
@@ -706,7 +703,7 @@ La réversibilité de la solution est elle-même un critère technique : à tout
 | DELETE | `/api/admin/formations` | Session admin + CSRF | Désactivation logique d'une formation. |
 | GET | `/api/admin/export` | Session admin | Export CSV de l'historique des réponses. |
 
-## Annexe C — Schéma de la base de données (résumé)
+## Annexe C, Schéma de la base de données (résumé)
 
 ```
 users (id, username UQ, email UQ, password_hash, role, created_at)
@@ -725,7 +722,7 @@ questions (id, text, active, quick, position)
 formations (id, name, description, level, contact_email, contact_url, active)
 ```
 
-## Annexe D — Extrait du fichier `.env` de référence
+## Annexe D, Extrait du fichier `.env` de référence
 
 ```
 # Base de données
@@ -740,7 +737,7 @@ APP_ENV=production
 APP_URL=https://r4.ohvenus.fr
 ```
 
-## Annexe E — Politique de gestion des incidents
+## Annexe E, Politique de gestion des incidents
 
 | Niveau | Description | Délai d'intervention | Communication |
 |---|---|---|---|
@@ -751,12 +748,12 @@ APP_URL=https://r4.ohvenus.fr
 
 Tout incident de niveau P1 ou P2 fait l'objet d'un compte rendu écrit consigné dans `docs/incidents/` après résolution, indiquant chronologie, cause racine, mesures correctives et éventuelles mesures préventives à intégrer au backlog.
 
-## Annexe F — Liste des migrations SQL appliquées
+## Annexe F, Liste des migrations SQL appliquées
 
 | Fichier | Date d'application preprod | Date d'application prod | Auteur | Effet principal |
 |---|---|---|---|---|
-| `schema.sql` | 2026-03-23 | 2026-04-28 | A. Demoisson | Création initiale des trois tables transactionnelles (`users`, `survey_responses`, `response_answers`). |
-| `migration_v2.sql` | 2026-04-08 | 2026-04-28 | A. Demoisson | Création des quatre tables de référence (`questions`, `question_options`, `formations`, `formation_scores`) + CRUD admin. |
+| `schema.sql` | 2026-03-16 | 2026-04-28 | A. Demoisson | Création initiale des trois tables transactionnelles (`users`, `survey_responses`, `response_answers`). |
+| `migration_v2.sql` | 2026-04-20 | 2026-04-28 | A. Demoisson | Création des quatre tables de référence (`questions`, `question_options`, `formations`, `formation_scores`) + CRUD admin. |
 | `migration_v3_cnam.sql` | 2026-04-28 | 2026-04-28 | A. Demoisson | Périmètre 18 formations CNAM PACA + niveau RNCP. |
 | `migration_v4_questions.sql` | 2026-04-28 | 2026-04-28 | A. Demoisson | Quiz étendu à 30 questions thématiques. |
 | `migration_v5_quick.sql` | 2026-04-28 | 2026-04-28 | A. Demoisson | Mode test rapide (10 questions). |
