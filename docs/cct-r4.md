@@ -125,6 +125,8 @@ r4/
 ├── style.css               Feuilles de style globales (mobile-first).
 ├── app.js                  Logique du test (parcours, état, rendu).
 ├── account.js, admin.js    Logique des espaces respectifs.
+├── ping.php                Endpoint de monitoring : retourne 200 OK
+│                           sans accès BDD ; cible des sondes externes.
 ├── api/
 │   ├── index.php           Routeur HTTP unique (front controller).
 │   └── .htaccess           Réécriture vers index.php (Apache) — référence ;
@@ -241,8 +243,8 @@ Le schéma a évolué en cinq versions successives, chacune matérialisée par u
 
 | Migration | Contenu |
 |---|---|
-| `schema.sql` | Création initiale des sept tables. |
-| `migration_v2.sql` | Mise en place du CRUD admin sur questions/formations. |
+| `schema.sql` | Création initiale des trois tables transactionnelles `users`, `survey_responses`, `response_answers`. |
+| `migration_v2.sql` | Création des quatre tables de référence (`questions`, `question_options`, `formations`, `formation_scores`) et mise en place du CRUD admin associé. |
 | `migration_v3_cnam.sql` | Ajout de `formations.level` et `survey_responses.user_level`, remplacement des cinq formations de démo par les dix-huit du périmètre CNAM PACA, refonte du scoring. |
 | `migration_v4_questions.sql` | Passage de 10 à 30 questions thématiques (couverture domaine par domaine + soft skills), 60 options, 124 lignes de scoring rebâties pour les 18 formations. |
 | `migration_v5_quick.sql` | Ajout du drapeau `questions.quick` et marquage des dix questions retenues pour le mode rapide. |
@@ -302,7 +304,7 @@ L'absence de jeton, sa non-correspondance ou la non-existence du jeton serveur e
 
 ## 5.4. Limitation de débit (rate limiting)
 
-La route `POST /api/auth` (connexion / inscription / déconnexion) est protégée par un compteur de tentatives stocké en session. Au-delà de **dix tentatives consécutives échouées dans une fenêtre de cinq minutes**, la route renvoie 429 (*Too Many Requests*) jusqu'à expiration de la fenêtre.
+La route `POST /api/auth` (connexion / inscription / déconnexion) est protégée par un compteur de tentatives stocké en session. Au-delà de **cinq tentatives consécutives échouées dans une fenêtre de cinq minutes**, la route renvoie 429 (*Too Many Requests*) jusqu'à expiration de la fenêtre.
 
 Cette limitation niveau session protège efficacement contre les *brute force* opportunistes depuis un même navigateur. Une attaque distribuée depuis plusieurs IPs nécessiterait une couche complémentaire au niveau nginx (`limit_req`), prévue dans la procédure d'exploitation et activable sans modification applicative.
 
@@ -598,6 +600,7 @@ Plusieurs évolutions ont été délibérément écartées du périmètre v1 mai
 - **Internationalisation** — extraction des chaînes en fichiers de langue, mécanisme de bascule via préférence utilisateur. À envisager si une demande s'exprime au-delà du périmètre francophone.
 - **Application mobile native** — non envisagée à court terme, la version *responsive* étant jugée suffisante. Une *Progressive Web App* (PWA) constitue une étape intermédiaire envisageable à coût modéré (manifest, service worker minimal, prompt d'installation).
 - **Statistiques publiques agrégées** — *dashboard* institutionnel présentant les tendances du test (formations les plus recommandées, profil des candidats). Suppose une revue d'opportunité côté Communication et un travail de pseudonymisation supplémentaire.
+- **Revue annuelle du scoring** — engagement pris dans le CCF (§ Annexe B) d'organiser une revue conjointe avec les Responsables de formation pour ajuster la pondération des trente questions vis-à-vis des dix-huit formations. Le compte rendu de cette revue sera versionné dans `docs/cr/` (réunion type M3 récurrente annuelle), avec migration SQL associée si la pondération évolue.
 
 ## 10.3. Critères de bascule vers une refonte technique
 
@@ -622,7 +625,7 @@ La solution est techniquement réceptionnable lorsque l'ensemble des critères c
 | Les en-têtes de sécurité (cf. §5.5) sont présents sur toutes les réponses. | `curl -I` sur la racine. |
 | Les routes `admin/*` retournent 403 en l'absence d'authentification administrateur. | Test manuel sans session, puis avec session utilisateur non admin. |
 | Toute route mutante refusée sans jeton CSRF valide. | Test manuel via `curl -X POST` sans en-tête, puis avec en-tête erroné. |
-| Tentative répétée sur `/api/auth` plafonnée à dix échecs en cinq minutes. | Test manuel via boucle `curl`. |
+| Tentative répétée sur `/api/auth` plafonnée à cinq échecs en cinq minutes. | Test manuel via boucle `curl`. |
 | `display_errors` désactivé en production, aucune trace technique fuit dans les réponses 500. | Test manuel via requête déclenchant une erreur (route inexistante, payload invalide). |
 | Aucune dépendance externe applicative présente dans le dépôt. | Inspection manuelle (pas de `vendor/`, pas de `node_modules/`, pas de `composer.json`). |
 | L'export CSV contient les colonnes attendues, sans information nominative non anonymisée. | Lancement manuel de l'export depuis l'interface admin. |
@@ -752,8 +755,8 @@ Tout incident de niveau P1 ou P2 fait l'objet d'un compte rendu écrit consigné
 
 | Fichier | Date d'application preprod | Date d'application prod | Auteur | Effet principal |
 |---|---|---|---|---|
-| `schema.sql` | 2026-03-23 | 2026-04-28 | A. Demoisson | Création initiale des sept tables. |
-| `migration_v2.sql` | 2026-04-08 | 2026-04-28 | A. Demoisson | Refonte questions/formations CRUD. |
+| `schema.sql` | 2026-03-23 | 2026-04-28 | A. Demoisson | Création initiale des trois tables transactionnelles (`users`, `survey_responses`, `response_answers`). |
+| `migration_v2.sql` | 2026-04-08 | 2026-04-28 | A. Demoisson | Création des quatre tables de référence (`questions`, `question_options`, `formations`, `formation_scores`) + CRUD admin. |
 | `migration_v3_cnam.sql` | 2026-04-28 | 2026-04-28 | A. Demoisson | Périmètre 18 formations CNAM PACA + niveau RNCP. |
 | `migration_v4_questions.sql` | 2026-04-28 | 2026-04-28 | A. Demoisson | Quiz étendu à 30 questions thématiques. |
 | `migration_v5_quick.sql` | 2026-04-28 | 2026-04-28 | A. Demoisson | Mode test rapide (10 questions). |

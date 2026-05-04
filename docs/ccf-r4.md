@@ -328,9 +328,9 @@ L'application doit pouvoir être reprise par un autre apprenti ou un développeu
 | Livrable | Description |
 |---|---|
 | Comptes-rendus de réunion | Un compte-rendu par réunion formelle (kickoff, ateliers, comité de validation), versionné dans `docs/cr/`. |
-| Issues GitHub | Vingt-quatre issues codifiées par priorité, libellées par phase, reliées à des *milestones*. |
-| Project board | *Kanban* GitHub avec colonnes Todo / In Progress / Done, mis à jour à chaque commit. |
-| Releases | Trois releases successives marquant les jalons : Phase 0+1, Phase 2, Phase 3. |
+| Issues GitHub | Vingt-neuf issues codifiées par priorité (B/F/Q préfixées d'un numéro séquentiel), libellées par phase, reliées à des *milestones*. Le périmètre initial des vingt-quatre issues du CCF v1.0 a été enrichi en cours d'exécution par les issues F8/F9/F10 (Phase 5), une issue de comitologie et l'issue F12 (bouton retour). |
+| Project board | *Kanban* GitHub avec trois colonnes Todo / In Progress / Done, mis à jour automatiquement à la fermeture de chaque issue. |
+| Releases | Trois releases successives marquant les jalons : Phase 0+1, Phase 2, Phase 3. Les releases sont publiées au moment du rendu R4 ; un statut *Draft* est conservé jusque-là pour permettre la mise à jour des notes de version. |
 
 # 7. Critères d'acceptation globaux
 
@@ -347,7 +347,7 @@ La solution est réceptionnée par le commanditaire si l'ensemble des conditions
 
 # 8. Planning prévisionnel
 
-Le projet est planifié en cinq phases temporelles de durée variable, chacune associée à un ensemble d'exigences fonctionnelles à livrer.
+Le projet est planifié en six phases temporelles de durée variable, chacune associée à un ensemble d'exigences fonctionnelles à livrer. Les Phases 0 à 4 forment le périmètre cible de la version 1 livrable au commanditaire ; la Phase 5 regroupe les enrichissements post-livraison école délivrés en parallèle (élargissement du périmètre CNAM, espace personnel, etc.) et est couverte par le présent CCF à titre prospectif.
 
 | Phase | Périmètre | Durée estimée | Date jalon |
 |---|---|---|---|
