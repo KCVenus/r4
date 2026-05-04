@@ -16,5 +16,7 @@ desktop.ini
 node_modules/
 dist/
 
-# Local Claude Code settings
+# Local AI/IDE assistant settings (not committed)
 .claude/
+.cursor/
+.aider*
