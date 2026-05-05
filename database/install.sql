@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `username`      VARCHAR(50)     NOT NULL,
   `email`         VARCHAR(255)    DEFAULT NULL,
   `password_hash` VARCHAR(255)    NOT NULL,
-  `role`          ENUM('user','admin') NOT NULL DEFAULT 'user',
+  `role`          ENUM('user','admin','coordinateur') NOT NULL DEFAULT 'user',
   `created_at`    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_username` (`username`),
@@ -62,14 +62,18 @@ CREATE TABLE IF NOT EXISTS `questions` (
   `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `question_key` VARCHAR(50)  NOT NULL,
   `text`         TEXT         NOT NULL,
-  `sort_order`   INT          NOT NULL DEFAULT 0,
+  `sort_order`   INT          NOT NULL DEFAULT 1,
   `active`       TINYINT(1)   NOT NULL DEFAULT 1,
   `quick`        TINYINT(1)   NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_question_key` (`question_key`)
+  UNIQUE KEY `uq_question_key` (`question_key`),
+  CONSTRAINT `chk_questions_sort_order` CHECK (`sort_order` >= 1)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── 6. Options de chaque question ────────────────────────────
+-- Note: pas de CHECK sur question_options.sort_order — l'éditeur admin
+-- assigne 0 au premier élément ajouté, et le scope du fix ne porte que
+-- sur les positions de questions visibles côté UI utilisateur.
 CREATE TABLE IF NOT EXISTS `question_options` (
   `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `question_id` INT UNSIGNED NOT NULL,

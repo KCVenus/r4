@@ -41,12 +41,22 @@ use App\Controllers\{AuthController, QuestionController, RecommendController, An
 $method = $_SERVER['REQUEST_METHOD'];
 $route  = trim($_GET['_route'] ?? '', '/');
 
-// ── Admin middleware ──────────────────────────────────────────────────────
-// Protect the /admin/* routes early, before any controller instantiation.
-// StatsController has its own requireAdmin() call because /stats isn't under /admin.
-$adminRoutes = ['admin/questions', 'admin/question', 'admin/formations', 'admin/export'];
-if (in_array($route, $adminRoutes, true)) {
-    if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+// ── Role-based middleware ─────────────────────────────────────────────────
+// Each /admin/* route is gated to a list of allowed roles. Coordinators
+// share the question CRUD with admins (so they can maintain the test pool)
+// but are blocked from formations + export (sensitive nominative data).
+// StatsController has its own requireAdmin() call because /stats isn't
+// under /admin and stays admin-only too.
+$routeRoles = [
+    'admin/questions'  => ['admin', 'coordinateur'],
+    'admin/question'   => ['admin', 'coordinateur'],
+    'admin/formations' => ['admin'],
+    'admin/export'     => ['admin'],
+];
+if (isset($routeRoles[$route])) {
+    $allowed     = $routeRoles[$route];
+    $sessionRole = $_SESSION['role'] ?? '';
+    if (empty($_SESSION['user_id']) || !in_array($sessionRole, $allowed, true)) {
         Response::error('Accès refusé', 403);
         exit;
     }

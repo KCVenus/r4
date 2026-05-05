@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#b21e35" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#1e293b"  media="(prefers-color-scheme: dark)" />
   <title>Mon compte</title>
-  <link rel="stylesheet" href="style.css?v=20260428105000" />
+  <script>(function(){try{var t=localStorage.getItem('r4-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+  <link rel="stylesheet" href="style.css?v=20260505141043" />
+  <script defer src="theme.js?v=20260505141043"></script>
 </head>
 <body>
 
@@ -17,6 +19,7 @@
         <span id="username-display"></span>
         <a href="index.html" class="link-btn">Refaire le test</a>
         <a id="admin-link" href="admin.html" class="link-btn hidden">Admin</a>
+        <button class="theme-toggle" data-theme-toggle type="button">🌗</button>
         <button id="btn-logout" class="link-btn">Déconnexion</button>
       </div>
     </div>

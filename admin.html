@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#2563eb" />
+  <meta name="theme-color" content="#b21e35" />
   <title>Admin — R4</title>
-  <link rel="stylesheet" href="style.css?v=20260504130000" />
+  <script>(function(){try{var t=localStorage.getItem('r4-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+  <link rel="stylesheet" href="style.css?v=20260505141043" />
+  <script defer src="theme.js?v=20260505141043"></script>
 </head>
 <body class="admin-body">
 
@@ -14,6 +16,7 @@
       <h1 class="admin-header-title">Tableau de bord</h1>
       <div class="admin-header-actions">
         <a href="index.html" class="link-btn">Questionnaire</a>
+        <button class="theme-toggle" data-theme-toggle type="button">🌗</button>
         <button id="btn-logout" class="link-btn">Déconnexion</button>
       </div>
     </div>
@@ -30,6 +33,6 @@
     <div class="admin-loading">Chargement des statistiques…</div>
   </main>
 
-  <script src="admin.js?v=20260504130000"></script>
+  <script src="admin.js?v=20260505141839"></script>
 </body>
 </html>
