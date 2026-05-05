@@ -17,9 +17,21 @@
   var btnLogout   = document.getElementById('btn-logout');
   var csrfToken   = '';
   var activeTab   = 'stats';
+  // Captured from the /auth payload — drives the tab gating below.
+  var currentRole = null;
+
+  // Tabs each role is allowed to see. Mirrors the route allow-list in
+  // api/index.php: coordinators only get the question/test editors.
+  var TAB_ROLES = {
+    stats:      ['admin'],
+    questions:  ['admin', 'coordinateur'],
+    tests:      ['admin', 'coordinateur'],
+    formations: ['admin'],
+    export:     ['admin'],
+  };
 
   // ── Auth guard + init ─────────────────────────────────────
-  // Sequential promise chain: check auth, verify admin role, then load CSRF + initial tab.
+  // Sequential promise chain: check auth, verify role, then load CSRF + initial tab.
   // Any failure anywhere falls through to the catch and redirects to /login.html.
   fetch('api/auth', { credentials: 'include' })
     .then(function (response) {
@@ -28,8 +40,13 @@
     })
     .then(function (user) {
       if (!user) return;
-      // Non-admin logged-in users are bounced back to the main questionnaire.
-      if (user.role !== 'admin') { window.location.href = 'index.html'; return; }
+      // Only admins and coordinators can reach this dashboard. Anyone else
+      // (regular user, no session) gets bounced back to the questionnaire.
+      if (user.role !== 'admin' && user.role !== 'coordinateur') {
+        window.location.href = 'index.html';
+        return;
+      }
+      currentRole = user.role;
       return fetch('api/csrf', { credentials: 'include' });
     })
     .then(function (response) {
@@ -38,10 +55,38 @@
     })
     .then(function (data) {
       if (data) csrfToken = data.token;
+      gateTabs(currentRole);
       setupTabs();
-      loadTab('stats');
+      // Coordinators land directly on the questions tab — stats are admin-only.
+      var initialTab = currentRole === 'admin' ? 'stats' : 'questions';
+      activateTab(initialTab);
+      loadTab(initialTab);
     })
     .catch(function () { window.location.href = 'login.html'; });
+
+  /**
+   * Hide every tab the current role is not allowed to see.
+   *
+   * @param {string} role 'admin' or 'coordinateur'.
+   */
+  function gateTabs(role) {
+    tabsNav.querySelectorAll('.tab-btn').forEach(function (btn) {
+      var allowed = TAB_ROLES[btn.dataset.tab] || [];
+      if (allowed.indexOf(role) === -1) btn.style.display = 'none';
+    });
+  }
+
+  /**
+   * Visually mark a tab as active by id (used at boot before any click).
+   *
+   * @param {string} tabId data-tab value.
+   */
+  function activateTab(tabId) {
+    tabsNav.querySelectorAll('.tab-btn').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.tab === tabId);
+    });
+    activeTab = tabId;
+  }
 
   // ── Logout ────────────────────────────────────────────────
   btnLogout.addEventListener('click', function () {
@@ -77,6 +122,7 @@
     switch (tab) {
       case 'stats':      loadStats();      break;
       case 'questions':  loadQuestions();  break;
+      case 'tests':      loadTests();      break;
       case 'formations': loadFormations(); break;
       case 'export':     renderExport();   break;
     }
@@ -212,6 +258,14 @@
   // Cache the formations list once per tab load — needed by the editor modal
   // to render the per-option scoring grid. Refreshed on every loadQuestions().
   var formationsCache = [];
+  // Cache the tests catalogue (for the per-question test-membership grid).
+  // Loaded alongside questions + formations so the editor opens instantly.
+  var testsCache = [];
+  // Cache the full questions list, used by the test editor's question picker.
+  var questionsCache = [];
+  // Captured by renderQuestions so both modals can clamp the sort_order input
+  // without re-fetching. Mirrors the server-side bound in AdminController.
+  var lastQuestionsCount = 0;
 
   /**
    * Load both the questions list and the formations catalogue in parallel,
@@ -221,9 +275,12 @@
     Promise.all([
       fetch('api/admin/questions',  { credentials: 'include' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
       fetch('api/admin/formations', { credentials: 'include' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
+      fetch('api/admin/tests',      { credentials: 'include' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
     ])
       .then(function (results) {
         formationsCache = results[1].formations || [];
+        testsCache      = results[2].tests || [];
+        questionsCache  = results[0].questions || [];
         renderQuestions(results[0]);
       })
       .catch(function () {
@@ -238,6 +295,8 @@
    * @param {object} data Payload with a `questions` array.
    */
   function renderQuestions(data) {
+    lastQuestionsCount = data.questions.length;
+
     var html = '<section class="admin-section">';
     html += '<div class="admin-section-header">';
     html += '<h2 class="admin-section-title">Questions <span class="muted">(' + data.questions.length + ')</span></h2>';
@@ -285,7 +344,11 @@
     html += '<span class="tag tag-key">' + escapeHtml(question.question_key) + '</span>';
     html += '<span class="tag ' + (question.active ? 'tag-on' : 'tag-off') + '">' +
             (question.active ? '● Actif' : '○ Inactif') + '</span>';
-    if (question.quick) html += '<span class="tag tag-quick">⚡ Quick</span>';
+    // Show membership count: useful at-a-glance signal of which tests
+    // this question feeds (replaces the old binary `quick` badge).
+    if (question.test_count > 0) {
+      html += '<span class="tag tag-tests">📋 ' + question.test_count + ' test' + (question.test_count > 1 ? 's' : '') + '</span>';
+    }
     html += '</div>';
     html += '<div class="q-grid-card-actions">';
     html += '<button class="icon-btn btn-edit-question" data-id="' + question.id + '" title="Modifier">✎</button>';
@@ -325,7 +388,7 @@
       .then(function (data) {
         renderQuestionEditorModal(data.question);
       })
-      .catch(function () { alert('Erreur lors du chargement de la question.'); });
+      .catch(function () { showError('Erreur lors du chargement de la question.'); });
   }
 
   /**
@@ -334,25 +397,36 @@
    */
   function openCreateQuestionModal() {
     var modal = createModalShell('Nouvelle question');
+    // New row appends after the last → legal range is [1, count + 1].
+    var maxPos = lastQuestionsCount + 1;
+
     modal.body.innerHTML =
       '<div class="field"><label>Identifiant court (ex : q11, q24q)</label>' +
       '<input id="nq-key" type="text" placeholder="ex : q11" autocomplete="off"></div>' +
       '<div class="field"><label>Énoncé de la question</label>' +
       '<textarea id="nq-text" rows="3" placeholder="ex : Je préfère travailler en équipe."></textarea></div>' +
-      '<div class="field"><label>Ordre d\'affichage</label>' +
-      '<input id="nq-sort" type="number" value="0"></div>';
+      '<div class="field"><label>Ordre d\'affichage (1 à ' + maxPos + ')</label>' +
+      '<input id="nq-sort" type="number" min="1" max="' + maxPos + '" step="1" value="' + maxPos + '"></div>';
 
     modal.footer.innerHTML =
       '<button class="btn-secondary" data-modal-close>Annuler</button>' +
       '<button class="btn-primary" id="nq-create">Créer puis configurer</button>';
     wireModalClose(modal);
 
+    // Clamp on every keystroke so the user cannot leave the input on a
+    // negative or out-of-range value. Mirrors the server-side bound.
+    clampPositionInput(modal.body.querySelector('#nq-sort'), maxPos);
+
     modal.body.querySelector('#nq-key').focus();
     modal.footer.querySelector('#nq-create').addEventListener('click', function () {
       var key  = modal.body.querySelector('#nq-key').value.trim();
       var text = modal.body.querySelector('#nq-text').value.trim();
-      var sort = parseInt(modal.body.querySelector('#nq-sort').value) || 0;
-      if (!key || !text) { alert('Identifiant et énoncé requis.'); return; }
+      var sort = parseInt(modal.body.querySelector('#nq-sort').value, 10);
+      if (!key || !text) { showError('Identifiant et énoncé requis.'); return; }
+      if (isNaN(sort) || sort < 1 || sort > maxPos) {
+        showError('Position invalide (entre 1 et ' + maxPos + ').');
+        return;
+      }
       apiCall('POST', 'api/admin/questions', { question_key: key, text: text, sort_order: sort }, function (resp) {
         closeModal(modal);
         // Re-open the freshly-created row in the full editor so the admin
@@ -373,6 +447,8 @@
    */
   function renderQuestionEditorModal(q) {
     var modal = createModalShell('Modifier la question — ' + q.question_key, 'modal-wide');
+    // Question already exists, so the upper bound is the current count.
+    var maxPos = Math.max(1, lastQuestionsCount);
 
     // Internal state mutated by the option/score editors below.
     // Cloned from q.options so we can edit freely without touching the source.
@@ -380,7 +456,9 @@
       text:       q.text,
       sort_order: q.sort_order,
       active:     !!q.active,
-      quick:      !!q.quick,
+      // Test memberships → cloned array so toggling checkboxes doesn't mutate
+      // the cached payload from GET /admin/question.
+      test_ids:   (q.test_ids || []).slice(),
       options:    (q.options || []).map(function (o) {
         return {
           id:         o.id,
@@ -412,12 +490,33 @@
       html += '<div class="field"><label>Énoncé de la question</label>' +
               '<textarea id="ed-text" rows="3">' + escapeHtml(state.text) + '</textarea></div>';
       html += '<div class="field-row">';
-      html += '<div class="field"><label>Ordre</label><input id="ed-sort" type="number" value="' + state.sort_order + '"></div>';
+      html += '<div class="field"><label>Ordre (1 à ' + maxPos + ')</label>' +
+              '<input id="ed-sort" type="number" min="1" max="' + maxPos + '" step="1" value="' + state.sort_order + '"></div>';
       html += '<div class="field-checks">';
       html += '<label class="check"><input id="ed-active" type="checkbox"' + (state.active ? ' checked' : '') + '> Active</label>';
-      html += '<label class="check"><input id="ed-quick" type="checkbox"' + (state.quick ? ' checked' : '') + '> Test rapide (10 questions)</label>';
       html += '</div>';
       html += '</div>';
+      html += '</div>';
+
+      // Test memberships — one checkbox per existing test. Replaces the
+      // old single "quick" toggle: a question can now belong to any subset
+      // of tests defined by admin/coordinators.
+      html += '<div class="modal-section">';
+      html += '<div class="modal-section-head"><h4>Tests qui incluent cette question</h4></div>';
+      if (testsCache.length === 0) {
+        html += '<p class="muted">Aucun test n\'existe encore. Créez-en dans l\'onglet Tests.</p>';
+      } else {
+        html += '<div class="test-membership">';
+        testsCache.forEach(function (t) {
+          var checked = state.test_ids.indexOf(t.id) !== -1;
+          html += '<label class="check check-test">' +
+                  '<input type="checkbox" class="ed-test" data-tid="' + t.id + '"' + (checked ? ' checked' : '') + '>' +
+                  '<span class="test-name">' + escapeHtml(t.name) + '</span>' +
+                  '<span class="test-meta muted">' + (t.question_count || 0) + ' q.</span>' +
+                  '</label>';
+        });
+        html += '</div>';
+      }
       html += '</div>';
 
       // Options + scores.
@@ -493,9 +592,21 @@
      */
     function bindEditorEvents() {
       modal.body.querySelector('#ed-text').addEventListener('input', function (e) { state.text = e.target.value; });
-      modal.body.querySelector('#ed-sort').addEventListener('input', function (e) { state.sort_order = parseInt(e.target.value) || 0; });
+      // Clamp to the [1, maxPos] range and reflect the clamped value into
+      // both the input and the tracked state. Prevents negatives outright.
+      var sortInput = modal.body.querySelector('#ed-sort');
+      clampPositionInput(sortInput, maxPos, function (clamped) { state.sort_order = clamped; });
       modal.body.querySelector('#ed-active').addEventListener('change', function (e) { state.active = e.target.checked; });
-      modal.body.querySelector('#ed-quick').addEventListener('change', function (e) { state.quick = e.target.checked; });
+
+      // Test-membership checkboxes: keep state.test_ids in sync as user toggles.
+      modal.body.querySelectorAll('.ed-test').forEach(function (chk) {
+        chk.addEventListener('change', function (e) {
+          var tid = parseInt(e.target.dataset.tid, 10);
+          var idx = state.test_ids.indexOf(tid);
+          if (e.target.checked && idx === -1)      state.test_ids.push(tid);
+          else if (!e.target.checked && idx !== -1) state.test_ids.splice(idx, 1);
+        });
+      });
 
       modal.body.querySelector('#ed-add-opt').addEventListener('click', function () {
         state.options.push({ id: null, value: '', label: '', sort_order: state.options.length, scores: {} });
@@ -554,10 +665,14 @@
       '<button class="btn-primary" id="ed-save">Enregistrer</button>';
     modal.footer.querySelector('#ed-save').addEventListener('click', function () {
       // Final guards mirroring the server checks.
-      if (!state.text.trim())                 { alert('Un énoncé est requis.'); return; }
-      if (state.options.length < 2)           { alert('Au moins 2 réponses sont requises.'); return; }
+      if (!state.text.trim())       { showError('Un énoncé est requis.'); return; }
+      if (state.options.length < 2) { showError('Au moins 2 réponses sont requises.'); return; }
       var bad = state.options.some(function (o) { return !o.value.trim() || !o.label.trim(); });
-      if (bad) { alert('Chaque réponse doit avoir un code et un libellé.'); return; }
+      if (bad) { showError('Chaque réponse doit avoir un code et un libellé.'); return; }
+      if (isNaN(state.sort_order) || state.sort_order < 1 || state.sort_order > maxPos) {
+        showError('Position invalide (entre 1 et ' + maxPos + ').');
+        return;
+      }
 
       apiCall('PUT', 'api/admin/question?id=' + q.id, state, function () {
         closeModal(modal);
@@ -573,6 +688,234 @@
    */
   function deleteQuestion(id) {
     apiCall('DELETE', 'api/admin/questions?id=' + id, null, function () { loadQuestions(); });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // TESTS TAB
+  // ═══════════════════════════════════════════════════════════
+
+  /**
+   * Load the tests catalogue and the questions pool in parallel, then hand
+   * off to renderTestsList. The questions list is needed by the editor so
+   * the admin/coord can pick which questions belong to the test.
+   */
+  function loadTests() {
+    Promise.all([
+      fetch('api/admin/tests',     { credentials: 'include' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
+      fetch('api/admin/questions', { credentials: 'include' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
+    ])
+      .then(function (results) {
+        testsCache     = results[0].tests || [];
+        questionsCache = results[1].questions || [];
+        renderTestsList(testsCache);
+      })
+      .catch(function () {
+        contentRoot.innerHTML = '<p class="admin-error">Erreur lors du chargement des tests.</p>';
+      });
+  }
+
+  /**
+   * Grid of test cards: name + question count + active badge + edit/delete.
+   *
+   * @param {Array<object>} tests Cached list from loadTests().
+   */
+  function renderTestsList(tests) {
+    var html = '<section class="admin-section">';
+    html += '<div class="admin-section-header">';
+    html += '<h2 class="admin-section-title">Tests <span class="muted">(' + tests.length + ')</span></h2>';
+    html += '<button class="btn-primary btn-sm" id="btn-add-test">+ Nouveau test</button>';
+    html += '</div>';
+
+    if (tests.length === 0) {
+      html += '<div class="empty-state"><p>Aucun test pour le moment.</p>' +
+              '<p class="muted">Cliquez sur « Nouveau test » pour commencer.</p></div>';
+    } else {
+      html += '<div class="q-grid">';
+      tests.forEach(function (test) {
+        html += '<article class="q-grid-card">';
+        html += '<header class="q-grid-card-head">';
+        html += '<div class="q-grid-card-tags">';
+        html += '<span class="tag tag-key">' + escapeHtml(test.slug) + '</span>';
+        html += '<span class="tag ' + (test.active ? 'tag-on' : 'tag-off') + '">' +
+                (test.active ? '● Actif' : '○ Inactif') + '</span>';
+        html += '<span class="tag tag-tests">' + (test.question_count || 0) + ' question' + (test.question_count > 1 ? 's' : '') + '</span>';
+        html += '</div>';
+        html += '<div class="q-grid-card-actions">';
+        html += '<button class="icon-btn btn-edit-test" data-id="' + test.id + '" title="Modifier">✎</button>';
+        html += '<button class="icon-btn icon-btn-danger btn-delete-test" data-id="' + test.id + '" title="Supprimer">✕</button>';
+        html += '</div></header>';
+        html += '<p class="q-grid-card-text"><strong>' + escapeHtml(test.name) + '</strong></p>';
+        if (test.description) {
+          html += '<p class="q-grid-card-text muted">' + escapeHtml(test.description) + '</p>';
+        }
+        html += '</article>';
+      });
+      html += '</div>';
+    }
+
+    html += '</section>';
+    contentRoot.innerHTML = html;
+
+    document.getElementById('btn-add-test').addEventListener('click', openCreateTestModal);
+    document.querySelectorAll('.btn-edit-test').forEach(function (btn) {
+      btn.addEventListener('click', function () { openTestEditorModal(parseInt(btn.dataset.id, 10)); });
+    });
+    document.querySelectorAll('.btn-delete-test').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!confirm('Supprimer ce test ? Les questions ne sont pas supprimées, seul le test l\'est.')) return;
+        apiCall('DELETE', 'api/admin/tests?id=' + btn.dataset.id, null, loadTests);
+      });
+    });
+  }
+
+  /**
+   * Step-1 modal for new tests: collect slug + name + description, then
+   * open the full editor to assign questions.
+   */
+  function openCreateTestModal() {
+    var modal = createModalShell('Nouveau test');
+    modal.body.innerHTML =
+      '<div class="field"><label>Slug (identifiant URL, ex : eclair, bachelor-rh)</label>' +
+      '<input id="nt-slug" type="text" autocomplete="off" placeholder="ex : eclair"></div>' +
+      '<div class="field"><label>Nom affiché</label>' +
+      '<input id="nt-name" type="text" placeholder="ex : Test éclair"></div>' +
+      '<div class="field"><label>Description (facultatif)</label>' +
+      '<textarea id="nt-desc" rows="2" placeholder="Une phrase qui explique à qui ce test s\'adresse."></textarea></div>';
+    modal.footer.innerHTML =
+      '<button class="btn-secondary" data-modal-close>Annuler</button>' +
+      '<button class="btn-primary" id="nt-create">Créer puis configurer</button>';
+    wireModalClose(modal);
+    modal.body.querySelector('#nt-slug').focus();
+
+    modal.footer.querySelector('#nt-create').addEventListener('click', function () {
+      var slug = modal.body.querySelector('#nt-slug').value.trim().toLowerCase();
+      var name = modal.body.querySelector('#nt-name').value.trim();
+      var desc = modal.body.querySelector('#nt-desc').value.trim();
+      if (!name) { showError('Le nom est requis.'); return; }
+      if (!/^[a-z0-9_-]{2,50}$/.test(slug)) {
+        showError('Slug invalide (2-50 car. : a-z, 0-9, -, _).');
+        return;
+      }
+      apiCall('POST', 'api/admin/tests', { slug: slug, name: name, description: desc }, function (resp) {
+        closeModal(modal);
+        // Re-open the freshly-created row in the full editor so the user
+        // can immediately assign questions.
+        openTestEditorModal(resp.id);
+      });
+    });
+  }
+
+  /**
+   * Open the full editor modal: fetches the test payload + builds the form.
+   *
+   * @param {number} id Test id.
+   */
+  function openTestEditorModal(id) {
+    fetch('api/admin/test?id=' + id, { credentials: 'include' })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (data) { renderTestEditorModal(data.test); })
+      .catch(function () { showError('Erreur lors du chargement du test.'); });
+  }
+
+  /**
+   * Editor modal: name + description + active + question multi-select.
+   *
+   * The order in which questions are assigned uses the source question's
+   * `sort_order` as a default. Per-test reorder is out of scope of this
+   * iteration — coordinators can adjust per-question membership from the
+   * Questions tab if a different order is needed.
+   *
+   * @param {object} t Full test payload (id, slug, name, description, active,
+   *                   questions: [{question_id, sort_order}]).
+   */
+  function renderTestEditorModal(t) {
+    var modal = createModalShell('Modifier le test — ' + t.slug, 'modal-wide');
+
+    // Map for O(1) "is this question currently in the test?" lookups.
+    var initialIds = {};
+    (t.questions || []).forEach(function (q) { initialIds[q.question_id] = q.sort_order || 1; });
+
+    var state = {
+      name:        t.name,
+      description: t.description || '',
+      active:      !!t.active,
+      // Set of question ids included in the test. Order is taken from
+      // questionsCache (admin order) at save time so coordinators aren't
+      // surprised by mismatched ordering.
+      questionIds: Object.keys(initialIds).map(function (k) { return parseInt(k, 10); }),
+    };
+
+    var html = '<div class="modal-section">';
+    html += '<div class="field"><label>Nom</label>' +
+            '<input id="te-name" type="text" value="' + escapeHtml(state.name) + '"></div>';
+    html += '<div class="field"><label>Description</label>' +
+            '<textarea id="te-desc" rows="2">' + escapeHtml(state.description) + '</textarea></div>';
+    html += '<div class="field-checks">';
+    html += '<label class="check"><input id="te-active" type="checkbox"' + (state.active ? ' checked' : '') + '> Actif (visible côté questionnaire)</label>';
+    html += '</div>';
+    html += '</div>';
+
+    html += '<div class="modal-section">';
+    html += '<div class="modal-section-head"><h4>Questions incluses (' + questionsCache.length + ' disponibles)</h4></div>';
+    if (questionsCache.length === 0) {
+      html += '<p class="muted">Aucune question existe encore.</p>';
+    } else {
+      html += '<div class="test-membership">';
+      questionsCache.forEach(function (q) {
+        var checked = state.questionIds.indexOf(q.id) !== -1;
+        html += '<label class="check check-test">' +
+                '<input type="checkbox" class="te-q" data-qid="' + q.id + '"' + (checked ? ' checked' : '') + '>' +
+                '<span class="test-name">' + escapeHtml(q.question_key) + ' — ' + escapeHtml(q.text.slice(0, 90)) + (q.text.length > 90 ? '…' : '') + '</span>' +
+                '</label>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    modal.body.innerHTML = html;
+    modal.footer.innerHTML =
+      '<button class="btn-secondary" data-modal-close>Annuler</button>' +
+      '<button class="btn-primary" id="te-save">Enregistrer</button>';
+    wireModalClose(modal);
+
+    modal.body.querySelector('#te-name').addEventListener('input',  function (e) { state.name        = e.target.value; });
+    modal.body.querySelector('#te-desc').addEventListener('input',  function (e) { state.description = e.target.value; });
+    modal.body.querySelector('#te-active').addEventListener('change', function (e) { state.active    = e.target.checked; });
+
+    modal.body.querySelectorAll('.te-q').forEach(function (chk) {
+      chk.addEventListener('change', function (e) {
+        var qid = parseInt(e.target.dataset.qid, 10);
+        var idx = state.questionIds.indexOf(qid);
+        if (e.target.checked && idx === -1)        state.questionIds.push(qid);
+        else if (!e.target.checked && idx !== -1) state.questionIds.splice(idx, 1);
+      });
+    });
+
+    modal.footer.querySelector('#te-save').addEventListener('click', function () {
+      if (!state.name.trim()) { showError('Le nom est requis.'); return; }
+
+      // Build the questions payload: 1-based sort_order following the order
+      // they appear in questionsCache (which is the admin's canonical order).
+      var ids = {};
+      state.questionIds.forEach(function (id) { ids[id] = true; });
+      var assigned = [];
+      var pos = 1;
+      questionsCache.forEach(function (q) {
+        if (ids[q.id]) {
+          assigned.push({ question_id: q.id, sort_order: pos++ });
+        }
+      });
+
+      apiCall('PUT', 'api/admin/test?id=' + t.id, {
+        name:        state.name,
+        description: state.description,
+        active:      state.active,
+        questions:   assigned,
+      }, function () {
+        closeModal(modal);
+        loadTests();
+      });
+    });
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -682,7 +1025,7 @@
       var desc  = document.getElementById('ff-desc').value.trim() || null;
       var email = document.getElementById('ff-email').value.trim() || null;
       var url   = document.getElementById('ff-url').value.trim() || null;
-      if (!name) { alert('Le nom est requis.'); return; }
+      if (!name) { showError('Le nom est requis.'); return; }
 
       if (isNew) {
         apiCall('POST', 'api/admin/formations', { name: name, description: desc, contact_email: email, contact_url: url }, function () { loadFormations(); });
@@ -719,6 +1062,83 @@
       '</section>';
   }
 
+  /**
+   * Bind a number input so its value can never leave the [1, maxPos] range.
+   * On every `input` event the value is reparsed and clamped — typing "-5"
+   * snaps to 1, typing "999" snaps to maxPos. The optional `onChange`
+   * callback receives the clamped integer (used by the editor modal to
+   * keep its `state.sort_order` mirror in sync).
+   *
+   * @param {HTMLInputElement} input
+   * @param {number}           maxPos
+   * @param {(v:number) => void} [onChange]
+   */
+  function clampPositionInput(input, maxPos, onChange) {
+    function clamp() {
+      var raw = parseInt(input.value, 10);
+      if (isNaN(raw) || raw < 1) {
+        input.value = '1';
+        if (onChange) onChange(1);
+      } else if (raw > maxPos) {
+        input.value = String(maxPos);
+        if (onChange) onChange(maxPos);
+      } else if (onChange) {
+        onChange(raw);
+      }
+    }
+    input.addEventListener('input', clamp);
+    // Also fire on blur in case the user leaves an invalid value mid-edit
+    // (the browser fires `change` only after blur for type=number).
+    input.addEventListener('change', clamp);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // TOASTS
+  // ═══════════════════════════════════════════════════════════
+
+  /**
+   * Lazily create the toast container on first use. Kept out of admin.html
+   * so the markup is owned by the script that pushes notifications into it.
+   *
+   * @returns {HTMLElement} The container `<div>`.
+   */
+  function getToastContainer() {
+    var container = document.getElementById('admin-toast');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'admin-toast';
+      document.body.appendChild(container);
+    }
+    return container;
+  }
+
+  /**
+   * Push a transient toast and auto-dismiss after `timeoutMs` (default 5s).
+   *
+   * @param {string}                       message Text to display.
+   * @param {'error'|'warn'|'success'}     kind    Visual variant.
+   * @param {number}                       [timeoutMs] Auto-dismiss delay.
+   */
+  function showToast(message, kind, timeoutMs) {
+    var container = getToastContainer();
+    var node = document.createElement('div');
+    node.className = 'toast toast-' + kind;
+    node.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    node.textContent = message;
+    container.appendChild(node);
+
+    // Slide-in next frame so the CSS transition runs from the initial state.
+    requestAnimationFrame(function () { node.classList.add('toast-visible'); });
+
+    var delay = timeoutMs || 5000;
+    setTimeout(function () {
+      node.classList.remove('toast-visible');
+      setTimeout(function () { node.remove(); }, 300);
+    }, delay);
+  }
+
+  function showError(message) { showToast(message, 'error'); }
+
   // ═══════════════════════════════════════════════════════════
   // UTILITIES
   // ═══════════════════════════════════════════════════════════
@@ -741,16 +1161,32 @@
     if (body !== null) options.body = JSON.stringify(body);
 
     fetch(url, options)
-      // Always read the body as JSON so we can surface the server's error message.
-      .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+      // Always try to read the body as JSON so we can surface the server's
+      // error message; tolerate non-JSON 5xx responses (returns null payload).
+      .then(function (response) {
+        return response.json()
+          .catch(function () { return {}; })
+          .then(function (data) { return { ok: response.ok, status: response.status, data: data }; });
+      })
       .then(function (result) {
         if (result.ok) {
-          onSuccess();
+          onSuccess(result.data);
+          return;
+        }
+        // Split feedback so the admin knows what went wrong:
+        //   - 5xx → DB / server outage
+        //   - 422 → validation (server's message is meaningful)
+        //   - other 4xx → server's message or generic fallback
+        var serverMsg = result.data && result.data.error;
+        if (result.status >= 500) {
+          showError('Erreur base de données, réessayez dans un instant.');
+        } else if (result.status === 422) {
+          showError(serverMsg || 'Données invalides.');
         } else {
-          alert('Erreur : ' + (result.data.error || 'Inconnue'));
+          showError(serverMsg || 'Erreur inconnue (' + result.status + ').');
         }
       })
-      .catch(function () { alert('Erreur réseau.'); });
+      .catch(function () { showError('Connexion réseau perdue, vérifiez votre connexion.'); });
   }
 
   /**

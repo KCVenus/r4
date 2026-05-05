@@ -17,14 +17,18 @@ class QuestionController
     /**
      * GET /questions — list active questions with their options.
      *
-     * Accepts an optional `?mode=quick` query param to restrict to the
-     * 10-question short test ; any other value (including missing) returns
-     * the full 30-question set, preserving backward compatibility.
+     * Accepts an optional `?test=<slug>` param to restrict to a specific
+     * test variant (e.g. ?test=rapide for the 10-question short version,
+     * ?test=complet for the full one). Missing or unknown slug → return
+     * every active question (legacy fallback so older clients keep working).
      */
     public function index(): void
     {
-        $quickOnly = ($_GET['mode'] ?? '') === 'quick';
-        Response::json(['questions' => Question::getActive($quickOnly)]);
+        $slug = trim((string) ($_GET['test'] ?? ''));
+        // Whitelist the slug shape so a malformed value can't be smuggled
+        // into the SQL via the prepared statement (defence-in-depth).
+        $testSlug = preg_match('/^[a-z0-9_-]{2,50}$/', $slug) ? $slug : null;
+        Response::json(['questions' => Question::getActive($testSlug)]);
     }
 
     /**

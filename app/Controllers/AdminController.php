@@ -40,6 +40,13 @@ class AdminController
             Response::error('question_key et text sont requis');
         }
 
+        // On creation the new row is not yet counted, so the largest legal
+        // position is `count + 1` (append at the very end of the list).
+        $maxPosition = Question::count() + 1;
+        if ($sortOrder < 1 || $sortOrder > $maxPosition) {
+            Response::error("Position invalide (attendu entre 1 et $maxPosition)", 422);
+        }
+
         $newId = Question::create($key, $text, $sortOrder);
         Response::json(['id' => $newId], 201);
     }
@@ -59,6 +66,13 @@ class AdminController
 
         if (!$id || !$text) {
             Response::error('id et text sont requis');
+        }
+
+        // The question already exists, so the upper bound is the current row
+        // count. `count + 1` is reserved for inserts.
+        $maxPosition = max(1, Question::count());
+        if ($sortOrder < 1 || $sortOrder > $maxPosition) {
+            Response::error("Position invalide (attendu entre 1 et $maxPosition)", 422);
         }
 
         Question::update($id, $text, $sortOrder, $active);
@@ -97,10 +111,12 @@ class AdminController
     }
 
     /**
-     * PUT /admin/question?id=X — atomically save question + options + scores.
+     * PUT /admin/question?id=X — atomically save question + options + scores
+     * + test memberships.
      *
      * Body matches the shape returned by GET /admin/question, with the addition
-     * of a `quick` boolean and per-option `scores` map (formation_id => points).
+     * of a per-option `scores` map (formation_id => points) and an optional
+     * `test_ids` array listing which tests the question now belongs to.
      * The full state is sent every time; the server reconciles diffs.
      */
     public function saveQuestionFull(): void
@@ -116,6 +132,14 @@ class AdminController
         }
         if (!isset($body['options']) || !is_array($body['options']) || count($body['options']) < 2) {
             Response::error('Au moins deux options sont requises');
+        }
+
+        // Same bound as the legacy updateQuestion: row already exists, so the
+        // valid range is [1, count]. Mirrors the client-side clamp in admin.js.
+        $sortOrder   = (int) ($body['sort_order'] ?? 0);
+        $maxPosition = max(1, Question::count());
+        if ($sortOrder < 1 || $sortOrder > $maxPosition) {
+            Response::error("Position invalide (attendu entre 1 et $maxPosition)", 422);
         }
 
         Question::saveFull($id, $body);
