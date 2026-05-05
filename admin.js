@@ -17,9 +17,20 @@
   var btnLogout   = document.getElementById('btn-logout');
   var csrfToken   = '';
   var activeTab   = 'stats';
+  // Captured from the /auth payload — drives the tab gating below.
+  var currentRole = null;
+
+  // Tabs each role is allowed to see. Mirrors the route allow-list in
+  // api/index.php: coordinators only get the questions editor.
+  var TAB_ROLES = {
+    stats:      ['admin'],
+    questions:  ['admin', 'coordinateur'],
+    formations: ['admin'],
+    export:     ['admin'],
+  };
 
   // ── Auth guard + init ─────────────────────────────────────
-  // Sequential promise chain: check auth, verify admin role, then load CSRF + initial tab.
+  // Sequential promise chain: check auth, verify role, then load CSRF + initial tab.
   // Any failure anywhere falls through to the catch and redirects to /login.html.
   fetch('api/auth', { credentials: 'include' })
     .then(function (response) {
@@ -28,8 +39,13 @@
     })
     .then(function (user) {
       if (!user) return;
-      // Non-admin logged-in users are bounced back to the main questionnaire.
-      if (user.role !== 'admin') { window.location.href = 'index.html'; return; }
+      // Only admins and coordinators can reach this dashboard. Anyone else
+      // (regular user, no session) gets bounced back to the questionnaire.
+      if (user.role !== 'admin' && user.role !== 'coordinateur') {
+        window.location.href = 'index.html';
+        return;
+      }
+      currentRole = user.role;
       return fetch('api/csrf', { credentials: 'include' });
     })
     .then(function (response) {
@@ -38,10 +54,38 @@
     })
     .then(function (data) {
       if (data) csrfToken = data.token;
+      gateTabs(currentRole);
       setupTabs();
-      loadTab('stats');
+      // Coordinators land directly on the questions tab — stats are admin-only.
+      var initialTab = currentRole === 'admin' ? 'stats' : 'questions';
+      activateTab(initialTab);
+      loadTab(initialTab);
     })
     .catch(function () { window.location.href = 'login.html'; });
+
+  /**
+   * Hide every tab the current role is not allowed to see.
+   *
+   * @param {string} role 'admin' or 'coordinateur'.
+   */
+  function gateTabs(role) {
+    tabsNav.querySelectorAll('.tab-btn').forEach(function (btn) {
+      var allowed = TAB_ROLES[btn.dataset.tab] || [];
+      if (allowed.indexOf(role) === -1) btn.style.display = 'none';
+    });
+  }
+
+  /**
+   * Visually mark a tab as active by id (used at boot before any click).
+   *
+   * @param {string} tabId data-tab value.
+   */
+  function activateTab(tabId) {
+    tabsNav.querySelectorAll('.tab-btn').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.tab === tabId);
+    });
+    activeTab = tabId;
+  }
 
   // ── Logout ────────────────────────────────────────────────
   btnLogout.addEventListener('click', function () {
