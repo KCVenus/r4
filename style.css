@@ -99,17 +99,34 @@ body {
   background: var(--color-surface);
   /* Soft shadow instead of a hard border-bottom — modern web-app feel. */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  padding: var(--space-sm) var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
 #app-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--color-primary);
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: var(--color-text);
   margin-bottom: var(--space-sm);
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Small red dot brand mark before the page title — gives the header an
+   identity without taking horizontal space. Hidden when the title is
+   empty (app.js sets it after fetch — avoid a stray dot). */
+#app-title:not(:empty)::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary-dk), var(--color-primary));
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+  flex-shrink: 0;
 }
 
 /* ── Progress bar ────────────────────────────────────────────────────────── */
@@ -394,20 +411,30 @@ section[id^="view-"].active {
 }
 
 /* ── Link-style button ───────────────────────────────────────────────────── */
+/* Text-only action button used in headers, footers and inline contexts.
+   In headers it picks up a soft hover background to look interactive
+   without screaming for attention. */
 .link-btn {
   background: none;
   border: none;
-  padding: 0;
+  padding: var(--space-xs) var(--space-sm);
   font-family: var(--font-body);
   font-size: 0.875rem;
-  color: var(--color-primary);
+  font-weight: 600;
+  color: var(--color-text-muted);
   cursor: pointer;
   text-decoration: none;
+  border-radius: var(--radius-sm);
   touch-action: manipulation;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.link-btn:hover {
-  text-decoration: underline;
+.link-btn:hover,
+.link-btn:focus-visible {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  text-decoration: none;
+  outline: none;
 }
 
 /* ── Theme toggle ────────────────────────────────────────────────────────── */
@@ -602,7 +629,7 @@ section[id^="view-"].active {
   background: var(--color-surface);
   /* Soft shadow instead of a hard border-bottom — matches the public header. */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  padding: var(--space-sm) var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -618,14 +645,29 @@ section[id^="view-"].active {
 }
 
 .admin-header-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--color-primary);
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Same brand dot as the public header — visual continuity across pages. */
+.admin-header-title::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary-dk), var(--color-primary));
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+  flex-shrink: 0;
 }
 
 .admin-header-actions {
   display: flex;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   align-items: center;
 }
 

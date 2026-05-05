@@ -943,7 +943,6 @@
     html += '<h2 class="admin-section-title">Formations (' + data.formations.length + ')</h2>';
     html += '<button class="btn-primary btn-sm" id="btn-add-formation">+ Ajouter</button>';
     html += '</div>';
-    html += '<div id="formation-form-area"></div>';
 
     data.formations.forEach(function (formation) {
       html += '<div class="crud-item" id="f-item-' + formation.id + '">';
@@ -996,42 +995,49 @@
   }
 
   /**
-   * Render the inline "create / edit formation" form.
+   * Open the formation editor in a modal so the form is always visible
+   * regardless of where the user scrolled in the list.
    *
    * @param {object|null} formation Existing formation for edit mode, null for create.
    */
   function showFormationForm(formation) {
-    var area = document.getElementById('formation-form-area');
-    if (!area) return;
     var isNew = !formation;
-    area.innerHTML =
-      '<div class="crud-form">' +
-      '<h3>' + (isNew ? 'Nouvelle formation' : 'Modifier la formation') + '</h3>' +
-      '<div class="field"><label>Nom</label><input id="ff-name" type="text" value="' + (formation ? escapeHtml(formation.name) : '') + '"></div>' +
-      '<div class="field"><label>Description</label><textarea id="ff-desc" rows="3">' + (formation ? escapeHtml(formation.description) : '') + '</textarea></div>' +
-      '<div class="field"><label>Email contact</label><input id="ff-email" type="email" value="' + (formation ? escapeHtml(formation.contact_email) : '') + '"></div>' +
-      '<div class="field"><label>URL</label><input id="ff-url" type="url" value="' + (formation ? escapeHtml(formation.contact_url) : '') + '"></div>' +
-      (!isNew ? '<div class="field"><label><input id="ff-active" type="checkbox"' + (formation.active ? ' checked' : '') + '> Active</label></div>' : '') +
-      '<div class="crud-form-actions">' +
-      '<button class="btn-primary btn-sm" id="ff-submit">' + (isNew ? 'Créer' : 'Enregistrer') + '</button>' +
-      '<button class="btn-secondary btn-sm" id="ff-cancel">Annuler</button>' +
-      '</div></div>';
+    var modal = createModalShell(isNew ? 'Nouvelle formation' : 'Modifier la formation');
 
-    document.getElementById('ff-cancel').addEventListener('click', function () { area.innerHTML = ''; });
+    modal.body.innerHTML =
+      '<div class="field"><label>Nom</label>' +
+      '<input id="ff-name" type="text" value="' + (formation ? escapeHtml(formation.name) : '') + '"></div>' +
+      '<div class="field"><label>Description</label>' +
+      '<textarea id="ff-desc" rows="3">' + (formation ? escapeHtml(formation.description) : '') + '</textarea></div>' +
+      '<div class="field"><label>Email contact</label>' +
+      '<input id="ff-email" type="email" value="' + (formation ? escapeHtml(formation.contact_email) : '') + '"></div>' +
+      '<div class="field"><label>URL</label>' +
+      '<input id="ff-url" type="url" value="' + (formation ? escapeHtml(formation.contact_url) : '') + '"></div>' +
+      (!isNew ? '<div class="field-checks"><label class="check"><input id="ff-active" type="checkbox"' + (formation.active ? ' checked' : '') + '> Active</label></div>' : '');
 
-    document.getElementById('ff-submit').addEventListener('click', function () {
-      var name  = document.getElementById('ff-name').value.trim();
+    modal.footer.innerHTML =
+      '<button class="btn-secondary" data-modal-close>Annuler</button>' +
+      '<button class="btn-primary" id="ff-submit">' + (isNew ? 'Créer' : 'Enregistrer') + '</button>';
+    wireModalClose(modal);
+
+    modal.body.querySelector('#ff-name').focus();
+
+    modal.footer.querySelector('#ff-submit').addEventListener('click', function () {
+      var name  = modal.body.querySelector('#ff-name').value.trim();
       // Coerce empty strings to null so the backend stores proper NULLs.
-      var desc  = document.getElementById('ff-desc').value.trim() || null;
-      var email = document.getElementById('ff-email').value.trim() || null;
-      var url   = document.getElementById('ff-url').value.trim() || null;
+      var desc  = modal.body.querySelector('#ff-desc').value.trim()  || null;
+      var email = modal.body.querySelector('#ff-email').value.trim() || null;
+      var url   = modal.body.querySelector('#ff-url').value.trim()   || null;
       if (!name) { showError('Le nom est requis.'); return; }
 
+      var done = function () { closeModal(modal); loadFormations(); };
       if (isNew) {
-        apiCall('POST', 'api/admin/formations', { name: name, description: desc, contact_email: email, contact_url: url }, function () { loadFormations(); });
+        apiCall('POST', 'api/admin/formations',
+          { name: name, description: desc, contact_email: email, contact_url: url }, done);
       } else {
-        var active = document.getElementById('ff-active').checked;
-        apiCall('PUT', 'api/admin/formations?id=' + formation.id, { name: name, description: desc, contact_email: email, contact_url: url, active: active }, function () { loadFormations(); });
+        var active = modal.body.querySelector('#ff-active').checked;
+        apiCall('PUT', 'api/admin/formations?id=' + formation.id,
+          { name: name, description: desc, contact_email: email, contact_url: url, active: active }, done);
       }
     });
   }
