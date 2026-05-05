@@ -196,6 +196,34 @@
         }).finally(function () { window.location.href = 'login.html'; });
       });
 
+      // ── GDPR: delete account ────────────────────────────────────────
+      // The export button is a plain <a download> so the browser handles
+      // the file save; only the destructive action needs JS + a confirm.
+      var btnDelete = document.getElementById('btn-delete-account');
+      if (btnDelete) {
+        btnDelete.addEventListener('click', function () {
+          var ok = confirm(
+            'Supprimer définitivement votre compte ?\n\n' +
+            'Toutes vos sessions de test et leurs réponses seront effacées.\n' +
+            'Cette action est irréversible.'
+          );
+          if (!ok) return;
+
+          fetch('api/me', {
+            method:      'DELETE',
+            credentials: 'include',
+            headers:     { 'X-CSRF-Token': csrfToken },
+          })
+            .then(function (r) {
+              if (!r.ok) throw new Error('http ' + r.status);
+              window.location.href = 'login.html';
+            })
+            .catch(function () {
+              alert('Erreur lors de la suppression du compte. Réessayez ou contactez-nous.');
+            });
+        });
+      }
+
       return Promise.all([
         fetch('api/me/tests',  { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : { tests: [] }; }),
         fetch('api/formations').then(function (r) { return r.ok ? r.json() : { formations: [] }; }),

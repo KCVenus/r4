@@ -1,13 +1,19 @@
 /* ── Design tokens ───────────────────────────────────────────────────────── */
 :root {
-  --color-bg:         #f5f7ff;
-  --color-surface:    #ffffff;
-  --color-primary:    #2563eb;
-  --color-primary-dk: #1d4ed8;
-  --color-text:       #1e293b;
-  --color-text-muted: #64748b;
-  --color-border:     #e2e8f0;
-  --color-success:    #16a34a;
+  --color-bg:           #fff7f8;
+  --color-surface:      #ffffff;
+  /* Elevated surface — table headers, hovered rows, modal foot. Slightly
+     darker than surface in light mode, slightly lighter in dark. */
+  --color-surface-2:    #f8fafc;
+  --color-primary:      #b21e35;
+  --color-primary-dk:   #8c1b31;
+  --color-primary-deep: #6e1626;
+  --color-primary-soft: #fdecef;
+  --color-primary-glow: rgba(178, 30, 53, 0.35);
+  --color-text:         #1e293b;
+  --color-text-muted:   #64748b;
+  --color-border:       #e2e8f0;
+  --color-success:      #16a34a;
 
   --space-xs:  0.25rem;
   --space-sm:  0.5rem;
@@ -27,17 +33,42 @@
 }
 
 /* ── Dark mode ───────────────────────────────────────────────────────────── */
+/* Three states driven by [data-theme] on <html>:
+     - absent / "auto" → follow system (prefers-color-scheme)
+     - "light"         → force light (overrides system dark)
+     - "dark"          → force dark (overrides system light)
+   theme.js writes the attribute from a localStorage choice. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg:         #0f172a;
-    --color-surface:    #1e293b;
-    --color-primary:    #60a5fa;
-    --color-primary-dk: #3b82f6;
-    --color-text:       #f1f5f9;
-    --color-text-muted: #94a3b8;
-    --color-border:     #334155;
-    --color-success:    #4ade80;
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-bg:           #0f172a;
+    --color-surface:      #1e293b;
+    --color-primary:      #d4243f;
+    --color-primary-dk:   #b21e35;
+    --color-primary-deep: #8c1b31;
+    --color-primary-soft: #3a0f17;
+    --color-primary-glow: rgba(212, 36, 63, 0.4);
+    --color-text:         #f1f5f9;
+    --color-text-muted:   #94a3b8;
+    --color-border:       #334155;
+    --color-success:      #4ade80;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg:           #0f172a;
+  --color-surface:      #1e293b;
+  --color-surface-2:    #273349;
+  --color-primary:      #d4243f;
+  --color-primary-dk:   #b21e35;
+  --color-primary-deep: #8c1b31;
+  --color-primary-soft: #3a0f17;
+  --color-primary-glow: rgba(212, 36, 63, 0.4);
+  --color-text:         #f1f5f9;
+  --color-text-muted:   #94a3b8;
+  --color-border:       #334155;
+  --color-success:      #4ade80;
 }
 
 /* ── Reset ───────────────────────────────────────────────────────────────── */
@@ -66,8 +97,9 @@ body {
 /* ── Header ──────────────────────────────────────────────────────────────── */
 #app-header {
   background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--space-md) var(--space-lg);
+  /* Soft shadow instead of a hard border-bottom — modern web-app feel. */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: var(--space-sm) var(--space-lg);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -186,7 +218,7 @@ section[id^="view-"].active {
 }
 
 .option-btn:focus-visible {
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 0 0 3px rgba(178, 30, 53, 0.35);
 }
 
 .option-btn:active {
@@ -274,15 +306,19 @@ section[id^="view-"].active {
 .btn-back:hover,
 .btn-back:focus-visible {
   color: var(--color-primary);
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(178, 30, 53, 0.08);
   outline: none;
 }
 
 @media (prefers-color-scheme: dark) {
-  .btn-back:hover,
-  .btn-back:focus-visible {
-    background: rgba(96, 165, 250, 0.12);
+  :root:not([data-theme="light"]) .btn-back:hover,
+  :root:not([data-theme="light"]) .btn-back:focus-visible {
+    background: rgba(212, 36, 63, 0.12);
   }
+}
+:root[data-theme="dark"] .btn-back:hover,
+:root[data-theme="dark"] .btn-back:focus-visible {
+  background: rgba(212, 36, 63, 0.12);
 }
 
 /* ── Summary view ────────────────────────────────────────────────────────── */
@@ -372,6 +408,43 @@ section[id^="view-"].active {
 
 .link-btn:hover {
   text-decoration: underline;
+}
+
+/* ── Theme toggle ────────────────────────────────────────────────────────── */
+/* Compact icon button used in every page header (and floating on login).
+   The label is an emoji set by theme.js based on the current state. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  background: var(--color-primary-soft);
+  border-color: var(--color-border);
+  outline: none;
+}
+
+/* Floating variant for the login page (no header). */
+.theme-toggle-floating {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 20;
+  background: var(--color-surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Last test card ──────────────────────────────────────────────────────── */
@@ -487,7 +560,8 @@ section[id^="view-"].active {
   color: var(--color-text);
 }
 
-.field input {
+.field input,
+.field textarea {
   width: 100%;
   padding: var(--space-sm) var(--space-md);
   font-family: var(--font-body);
@@ -497,10 +571,13 @@ section[id^="view-"].active {
   background: var(--color-surface);
   color: var(--color-text);
   transition: border-color var(--transition-fast);
-  min-height: 48px;
 }
 
-.field input:focus {
+.field input  { min-height: 48px; }
+.field textarea { resize: vertical; line-height: 1.4; }
+
+.field input:focus,
+.field textarea:focus {
   outline: none;
   border-color: var(--color-primary);
 }
@@ -517,14 +594,15 @@ section[id^="view-"].active {
 
 /* ── Admin page ──────────────────────────────────────────────────────────── */
 .admin-body {
-  background: #e8edf8;
+  background: var(--color-bg);
   min-height: 100vh;
 }
 
 .admin-header {
   background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--space-md) var(--space-lg);
+  /* Soft shadow instead of a hard border-bottom — matches the public header. */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: var(--space-sm) var(--space-lg);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -697,7 +775,7 @@ section[id^="view-"].active {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
-  background: #f8fafc;
+  background: var(--color-surface-2);
 }
 
 .user-table th.q-col {
@@ -707,7 +785,7 @@ section[id^="view-"].active {
 }
 
 .user-table tr:last-child td { border-bottom: none; }
-.user-table tr:hover td { background: #f8fafc; }
+.user-table tr:hover td { background: var(--color-surface-2); }
 
 .role-badge {
   display: inline-block;
@@ -719,7 +797,7 @@ section[id^="view-"].active {
 }
 
 .role-admin {
-  background: #eff6ff;
+  background: var(--color-primary-soft);
   color: var(--color-primary);
 }
 
@@ -731,7 +809,7 @@ section[id^="view-"].active {
 .answer-chip {
   display: inline-block;
   padding: 2px 8px;
-  background: #eff6ff;
+  background: var(--color-primary-soft);
   color: var(--color-primary);
   border-radius: 999px;
   font-size: 0.8125rem;
@@ -849,12 +927,13 @@ section[id^="view-"].active {
 
 @media (min-width: 960px) {
   body {
-    background: #e8edf8;
+    background: var(--color-bg);
   }
 
   @media (prefers-color-scheme: dark) {
-    body { background: #0a0f1e; }
+    :root:not([data-theme="light"]) body { background: #0a0f1e; }
   }
+  :root[data-theme="dark"] body { background: #0a0f1e; }
 
   main {
     margin-top: var(--space-2xl);
@@ -951,7 +1030,7 @@ section[id^="view-"].active {
   font-weight: 700;
   color: var(--color-primary);
   font-family: monospace;
-  background: #eff6ff;
+  background: var(--color-primary-soft);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -1018,12 +1097,13 @@ section[id^="view-"].active {
   margin-top: var(--space-md);
 }
 
+/* Dark-mode tweaks for semantic badges (auto-detect + manual toggle). */
 @media (prefers-color-scheme: dark) {
-  .crud-item-key { background: #1e3a5f; }
-  .user-table th { background: #1e293b; }
-  .badge-active   { background: #14532d; color: #86efac; }
-  .badge-inactive { background: #450a0a; color: #fca5a5; }
+  :root:not([data-theme="light"]) .badge-active   { background: #14532d; color: #86efac; }
+  :root:not([data-theme="light"]) .badge-inactive { background: #450a0a; color: #fca5a5; }
 }
+:root[data-theme="dark"] .badge-active   { background: #14532d; color: #86efac; }
+:root[data-theme="dark"] .badge-inactive { background: #450a0a; color: #fca5a5; }
 
 /* ── Score de compatibilité (page résultat) ──────────────────────────────── */
 .formation-score {
@@ -1142,7 +1222,7 @@ section[id^="view-"].active {
   border-radius: 50%;
   border: 0;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 2px 8px rgba(178, 30, 53, 0.35);
 }
 /* Firefox track + thumb */
 .level-slider input[type="range"]::-moz-range-track {
@@ -1191,8 +1271,9 @@ section[id^="view-"].active {
 }
 
 @media (prefers-color-scheme: dark) {
-  .level-warning { background: #78350f; color: #fde68a; }
+  :root:not([data-theme="light"]) .level-warning { background: #78350f; color: #fde68a; }
 }
+:root[data-theme="dark"] .level-warning { background: #78350f; color: #fde68a; }
 
 #btn-level-confirm:disabled {
   opacity: 0.5;
@@ -1423,10 +1504,127 @@ section[id^="view-"].active {
 .tag-on  { background: rgba(22, 163, 74, 0.12);  color: var(--color-success); }
 .tag-off { background: rgba(100, 116, 139, 0.12); color: var(--color-text-muted); }
 .tag-quick { background: rgba(245, 158, 11, 0.15); color: #b45309; }
+.tag-tests { background: var(--color-primary-soft); color: var(--color-primary-dk); }
+
+/* ── Test-membership picker (inside question + test editors) ─────────────── */
+.test-membership {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-height: 320px;
+  overflow-y: auto;
+  padding: var(--space-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.check-test {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.check-test:hover { background: var(--color-primary-soft); }
+.check-test .test-name { flex: 1; font-size: 0.875rem; }
+.check-test .test-meta { font-size: 0.75rem; }
+
+/* ── Legal pages (privacy.html, legal.html) ──────────────────────────────── */
+.legal-main {
+  flex: 1;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg);
+}
+
+.legal-section { margin-bottom: var(--space-xl); }
+.legal-section h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+  color: var(--color-primary);
+}
+.legal-section p,
+.legal-section ul {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin-bottom: var(--space-sm);
+}
+.legal-section ul { padding-left: var(--space-lg); }
+.legal-section li { margin-bottom: var(--space-xs); }
+.legal-section a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+/* ── Footer (privacy + legal links) ──────────────────────────────────────── */
+.app-footer {
+  margin-top: auto;
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+.app-footer a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.app-footer a:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+.app-footer .footer-sep {
+  margin: 0 var(--space-sm);
+  color: var(--color-border);
+}
+
+/* ── Account: "Mes données" GDPR controls ────────────────────────────────── */
+.gdpr-section {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--color-border);
+}
+.gdpr-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-width: 320px;
+}
+.gdpr-actions .btn-secondary,
+.gdpr-actions .btn-danger {
+  width: 100%;
+}
+.btn-danger {
+  display: block;
+  min-height: 48px;
+  padding: var(--space-sm) var(--space-lg);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  background: transparent;
+  color: #b91c1c;
+  border: 2px solid #fca5a5;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.btn-danger:hover {
+  background: #b91c1c;
+  color: #fff;
+  border-color: #b91c1c;
+}
 
 @media (prefers-color-scheme: dark) {
-  .tag-quick { color: #fbbf24; }
+  :root:not([data-theme="light"]) .tag-quick { color: #fbbf24; }
 }
+:root[data-theme="dark"] .tag-quick { color: #fbbf24; }
 
 /* Icon buttons (edit/delete on cards, modal close, etc.). */
 .icon-btn {
@@ -1647,8 +1845,8 @@ body.modal-open { overflow: hidden; }
 .formation-row:hover { background: var(--color-bg); }
 
 .formation-row.is-on {
-  background: rgba(37, 99, 235, 0.06);
-  border-color: rgba(37, 99, 235, 0.25);
+  background: rgba(178, 30, 53, 0.06);
+  border-color: rgba(178, 30, 53, 0.25);
 }
 
 .formation-toggle {
@@ -1687,4 +1885,48 @@ body.modal-open { overflow: hidden; }
   color: var(--color-primary);
   width: 14px;
   text-align: center;
+}
+
+/* ── Toasts (admin) ──────────────────────────────────────────────────────── */
+/* Stacked top-right notifications used by admin.js (showError).
+   Replaces the legacy `alert()` dialogs so an unfocused admin still sees feedback. */
+#admin-toast {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  min-width: 240px;
+  max-width: 360px;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border-left: 4px solid;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast-error   { border-left-color: #dc2626; }
+.toast-warn    { border-left-color: #d97706; }
+.toast-success { border-left-color: #16a34a; }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { transition: opacity 0.15s ease; transform: none; }
 }

@@ -32,21 +32,35 @@ require_once $base . '/Controllers/RecommendController.php';
 require_once $base . '/Controllers/AnswerController.php';
 require_once $base . '/Controllers/StatsController.php';
 require_once $base . '/Controllers/AdminController.php';
+require_once $base . '/Models/Test.php';
+require_once $base . '/Controllers/TestController.php';
 
 use App\Core\Response;
-use App\Controllers\{AuthController, QuestionController, RecommendController, AnswerController, StatsController, AdminController};
+use App\Controllers\{AuthController, QuestionController, RecommendController, AnswerController, StatsController, AdminController, TestController};
 
 // ── Router ────────────────────────────────────────────────────────────────
 // `_route` is the path rewritten by api/.htaccess (see RewriteRule there).
 $method = $_SERVER['REQUEST_METHOD'];
 $route  = trim($_GET['_route'] ?? '', '/');
 
-// ── Admin middleware ──────────────────────────────────────────────────────
-// Protect the /admin/* routes early, before any controller instantiation.
-// StatsController has its own requireAdmin() call because /stats isn't under /admin.
-$adminRoutes = ['admin/questions', 'admin/question', 'admin/formations', 'admin/export'];
-if (in_array($route, $adminRoutes, true)) {
-    if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+// ── Role-based middleware ─────────────────────────────────────────────────
+// Each /admin/* route is gated to a list of allowed roles. Coordinators
+// share the question CRUD with admins (so they can maintain the test pool)
+// but are blocked from formations + export (sensitive nominative data).
+// StatsController has its own requireAdmin() call because /stats isn't
+// under /admin and stays admin-only too.
+$routeRoles = [
+    'admin/questions'  => ['admin', 'coordinateur'],
+    'admin/question'   => ['admin', 'coordinateur'],
+    'admin/tests'      => ['admin', 'coordinateur'],
+    'admin/test'       => ['admin', 'coordinateur'],
+    'admin/formations' => ['admin'],
+    'admin/export'     => ['admin'],
+];
+if (isset($routeRoles[$route])) {
+    $allowed     = $routeRoles[$route];
+    $sessionRole = $_SESSION['role'] ?? '';
+    if (empty($_SESSION['user_id']) || !in_array($sessionRole, $allowed, true)) {
         Response::error('Accès refusé', 403);
         exit;
     }
@@ -57,8 +71,11 @@ if (in_array($route, $adminRoutes, true)) {
 // the token the client received from GET /csrf. hash_equals is timing-safe.
 $csrfProtected = [
     ['POST', 'auth'], ['POST', 'answers'],
+    ['DELETE', 'me'],
     ['POST', 'admin/questions'], ['PUT', 'admin/questions'], ['DELETE', 'admin/questions'],
     ['PUT', 'admin/question'],
+    ['POST', 'admin/tests'], ['DELETE', 'admin/tests'],
+    ['PUT', 'admin/test'],
     ['POST', 'admin/formations'], ['PUT', 'admin/formations'], ['DELETE', 'admin/formations'],
 ];
 if (in_array([$method, $route], $csrfProtected, true)) {
@@ -84,10 +101,13 @@ try {
         ['POST', 'auth']      => (new AuthController())->handle(),
         ['GET',  'questions']  => (new QuestionController())->index(),
         ['GET',  'formations'] => (new QuestionController())->formations(),
+        ['GET',  'tests']      => (new TestController())->listPublic(),
         ['POST', 'recommend']  => (new RecommendController())->recommend(),
         ['GET',  'answers']    => (new AnswerController())->last(),
         ['POST', 'answers']    => (new AnswerController())->store(),
         ['GET',  'me/tests']   => (new AnswerController())->listMine(),
+        ['GET',    'me/export'] => (new AuthController())->exportMe(),
+        ['DELETE', 'me']        => (new AuthController())->deleteMe(),
         ['GET',  'stats']               => (new StatsController())->index(),
         ['GET',    'admin/questions']   => (new AdminController())->listQuestions(),
         ['POST',   'admin/questions']   => (new AdminController())->createQuestion(),
@@ -95,6 +115,11 @@ try {
         ['DELETE', 'admin/questions']   => (new AdminController())->deleteQuestion(),
         ['GET',    'admin/question']    => (new AdminController())->getQuestion(),
         ['PUT',    'admin/question']    => (new AdminController())->saveQuestionFull(),
+        ['GET',    'admin/tests']       => (new TestController())->listAll(),
+        ['POST',   'admin/tests']       => (new TestController())->create(),
+        ['DELETE', 'admin/tests']       => (new TestController())->delete(),
+        ['GET',    'admin/test']        => (new TestController())->getOne(),
+        ['PUT',    'admin/test']        => (new TestController())->save(),
         ['GET',    'admin/formations']  => (new AdminController())->listFormations(),
         ['POST',   'admin/formations']  => (new AdminController())->createFormation(),
         ['PUT',    'admin/formations']  => (new AdminController())->updateFormation(),
