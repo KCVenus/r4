@@ -355,6 +355,10 @@
       '<button class="btn-primary" id="nq-create">Créer puis configurer</button>';
     wireModalClose(modal);
 
+    // Clamp on every keystroke so the user cannot leave the input on a
+    // negative or out-of-range value. Mirrors the server-side bound.
+    clampPositionInput(modal.body.querySelector('#nq-sort'), maxPos);
+
     modal.body.querySelector('#nq-key').focus();
     modal.footer.querySelector('#nq-create').addEventListener('click', function () {
       var key  = modal.body.querySelector('#nq-key').value.trim();
@@ -508,7 +512,10 @@
      */
     function bindEditorEvents() {
       modal.body.querySelector('#ed-text').addEventListener('input', function (e) { state.text = e.target.value; });
-      modal.body.querySelector('#ed-sort').addEventListener('input', function (e) { state.sort_order = parseInt(e.target.value) || 0; });
+      // Clamp to the [1, maxPos] range and reflect the clamped value into
+      // both the input and the tracked state. Prevents negatives outright.
+      var sortInput = modal.body.querySelector('#ed-sort');
+      clampPositionInput(sortInput, maxPos, function (clamped) { state.sort_order = clamped; });
       modal.body.querySelector('#ed-active').addEventListener('change', function (e) { state.active = e.target.checked; });
       modal.body.querySelector('#ed-quick').addEventListener('change', function (e) { state.quick = e.target.checked; });
 
@@ -736,6 +743,36 @@
       '<p>Téléchargez l\'ensemble des réponses au questionnaire au format CSV (compatible Excel).</p>' +
       '<a href="api/admin/export" class="btn-primary" download>⬇ Télécharger le CSV</a>' +
       '</section>';
+  }
+
+  /**
+   * Bind a number input so its value can never leave the [1, maxPos] range.
+   * On every `input` event the value is reparsed and clamped — typing "-5"
+   * snaps to 1, typing "999" snaps to maxPos. The optional `onChange`
+   * callback receives the clamped integer (used by the editor modal to
+   * keep its `state.sort_order` mirror in sync).
+   *
+   * @param {HTMLInputElement} input
+   * @param {number}           maxPos
+   * @param {(v:number) => void} [onChange]
+   */
+  function clampPositionInput(input, maxPos, onChange) {
+    function clamp() {
+      var raw = parseInt(input.value, 10);
+      if (isNaN(raw) || raw < 1) {
+        input.value = '1';
+        if (onChange) onChange(1);
+      } else if (raw > maxPos) {
+        input.value = String(maxPos);
+        if (onChange) onChange(maxPos);
+      } else if (onChange) {
+        onChange(raw);
+      }
+    }
+    input.addEventListener('input', clamp);
+    // Also fire on blur in case the user leaves an invalid value mid-edit
+    // (the browser fires `change` only after blur for type=number).
+    input.addEventListener('change', clamp);
   }
 
   // ═══════════════════════════════════════════════════════════
