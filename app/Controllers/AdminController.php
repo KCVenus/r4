@@ -78,6 +78,50 @@ class AdminController
         Response::json(['ok' => true]);
     }
 
+    /**
+     * GET /admin/question?id=X — return one question with its options + scoring.
+     *
+     * Powers the modern editor modal. Single payload, no extra round-trips.
+     */
+    public function getQuestion(): void
+    {
+        $id = (int) ($_GET['id'] ?? 0);
+        if (!$id) {
+            Response::error('id requis');
+        }
+        $question = Question::getOneFull($id);
+        if (!$question) {
+            Response::error('Question introuvable', 404);
+        }
+        Response::json(['question' => $question]);
+    }
+
+    /**
+     * PUT /admin/question?id=X — atomically save question + options + scores.
+     *
+     * Body matches the shape returned by GET /admin/question, with the addition
+     * of a `quick` boolean and per-option `scores` map (formation_id => points).
+     * The full state is sent every time; the server reconciles diffs.
+     */
+    public function saveQuestionFull(): void
+    {
+        $id   = (int) ($_GET['id'] ?? 0);
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+
+        if (!$id) {
+            Response::error('id requis');
+        }
+        if (trim($body['text'] ?? '') === '') {
+            Response::error('text est requis');
+        }
+        if (!isset($body['options']) || !is_array($body['options']) || count($body['options']) < 2) {
+            Response::error('Au moins deux options sont requises');
+        }
+
+        Question::saveFull($id, $body);
+        Response::json(['ok' => true]);
+    }
+
     // ── Formations ───────────────────────────────────────────────────────────
 
     /**

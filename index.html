@@ -6,7 +6,9 @@
   <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#1e293b"  media="(prefers-color-scheme: dark)" />
   <title>Test d'orientation</title>
-  <link rel="stylesheet" href="style.css" />
+  <!-- Versioned query string busts the Cloudflare CDN cache when assets
+       change ; bump the timestamp on every release that ships JS or CSS. -->
+  <link rel="stylesheet" href="style.css?v=20260504085235" />
 </head>
 <body>
 
@@ -15,6 +17,7 @@
       <h1 id="app-title"></h1>
       <div id="user-info" class="user-info hidden">
         <span id="username-display"></span>
+        <a id="account-link" href="account.html" class="link-btn">Mon compte</a>
         <a id="admin-link" href="admin.html" class="link-btn hidden">Admin</a>
         <button id="btn-logout" class="link-btn">Déconnexion</button>
       </div>
@@ -29,14 +32,66 @@
 
   <main>
 
-    <!-- Start screen — shown first, hidden by showView() once the user clicks "start". -->
+    <!--
+      Start screen — shown first.
+      Two CTAs let the visitor pick the test depth: 10-question quick mode
+      (3 min) or 30-question full mode (10 min). The chosen mode is stored
+      on the closure state and drives the /api/questions fetch.
+    -->
     <section id="view-start">
       <p id="app-description"></p>
-      <button id="btn-start" class="btn-primary">Commencer le test</button>
+      <div class="start-modes">
+        <button id="btn-start-quick" class="btn-primary start-mode">
+          <span class="start-mode-title">Test rapide</span>
+          <span class="start-mode-meta">10 questions · ~3 min</span>
+          <span class="start-mode-desc">Une question par grand domaine. Idéal pour un premier aperçu.</span>
+        </button>
+        <button id="btn-start-full" class="btn-secondary start-mode">
+          <span class="start-mode-title">Test complet</span>
+          <span class="start-mode-meta">30 questions · ~10 min</span>
+          <span class="start-mode-desc">Couverture détaillée + soft skills, pour un matching plus précis.</span>
+        </button>
+      </div>
+    </section>
+
+    <!--
+      Level slider screen (F10) — shown right after the start CTA.
+      The range input snaps to 5 positions matching {sans diplôme, bac,
+      bac+2, bac+3, bac+5+}; app.js maps the index to the canonical level
+      values {0, 5, 6, 7, 8} used by /api/recommend.
+    -->
+    <section id="view-level">
+      <button type="button" class="btn-back" data-back-target="start" aria-label="Revenir au choix du test">
+        <span aria-hidden="true">&larr;</span> Retour
+      </button>
+      <h2 class="level-title">Quel est votre niveau d'études actuel&nbsp;?</h2>
+      <p class="level-subtitle">On filtrera les formations qui vous sont accessibles.</p>
+
+      <div class="level-slider">
+        <input type="range" id="level-input" name="user_level" min="0" max="4" step="1" value="2"
+               aria-labelledby="level-current" />
+        <div class="level-ticks" aria-hidden="true">
+          <span>Sans diplôme</span>
+          <span>Bac</span>
+          <span>Bac+2</span>
+          <span>Bac+3</span>
+          <span>Bac+5+</span>
+        </div>
+      </div>
+
+      <p id="level-current" class="level-current" aria-live="polite"></p>
+      <p id="level-warning" class="level-warning hidden">
+        Sans diplôme, aucune formation CNAM ne vous est accessible directement. Contactez un conseiller pour être orienté vers une remise à niveau.
+      </p>
+
+      <button id="btn-level-confirm" class="btn-primary">Continuer</button>
     </section>
 
     <!-- Question screen — rendered entirely by app.js (counter + text + option buttons). -->
     <section id="view-question">
+      <button type="button" id="btn-back-question" class="btn-back" aria-label="Revenir à la question précédente">
+        <span aria-hidden="true">&larr;</span> Retour
+      </button>
       <div id="question-counter"></div>
       <p id="question-text"></p>
       <div id="options-container"></div>
@@ -58,6 +113,6 @@
 
   </main>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20260504085235"></script>
 </body>
 </html>

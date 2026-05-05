@@ -19,20 +19,22 @@ class Survey
      * parent survey_responses row — we never want orphan headers with no
      * answers. The prepared INSERT for answers is reused across iterations.
      *
-     * @param int   $userId  Authenticated user id (owner of the submission).
-     * @param array $answers List of {question_key, question_text, chosen_value, chosen_label}.
-     * @return int           Id of the created survey_responses row.
-     * @throws \Exception    Rethrown after rollback so the controller returns 500.
+     * @param int      $userId    Authenticated user id (owner of the submission).
+     * @param array    $answers   List of {question_key, question_text, chosen_value, chosen_label}.
+     * @param int|null $userLevel Study level chosen at the start of the test
+     *                            (5/6/7/8); null when unknown (legacy clients).
+     * @return int                Id of the created survey_responses row.
+     * @throws \Exception         Rethrown after rollback so the controller returns 500.
      */
-    public static function save(int $userId, array $answers): int
+    public static function save(int $userId, array $answers, ?int $userLevel = null): int
     {
         $pdo = Database::getInstance();
         $pdo->beginTransaction();
 
         try {
             // 1) Create the parent "response" row.
-            $pdo->prepare('INSERT INTO survey_responses (user_id) VALUES (?)')
-                ->execute([$userId]);
+            $pdo->prepare('INSERT INTO survey_responses (user_id, user_level) VALUES (?, ?)')
+                ->execute([$userId, $userLevel]);
             $responseId = (int) $pdo->lastInsertId();
 
             // 2) Insert each chosen answer, snapshotting the question text so
@@ -73,7 +75,7 @@ class Survey
     {
         $pdo  = Database::getInstance();
         $responseStmt = $pdo->prepare(
-            'SELECT id, completed_at FROM survey_responses
+            'SELECT id, user_level, completed_at FROM survey_responses
              WHERE  user_id = ?
              ORDER  BY completed_at DESC LIMIT 1'
         );
@@ -92,8 +94,59 @@ class Survey
 
         return [
             'id'           => (int) $response['id'],
+            'user_level'   => $response['user_level'] !== null ? (int) $response['user_level'] : null,
             'completed_at' => $response['completed_at'],
             'answers'      => $answersStmt->fetchAll(),
         ];
+    }
+
+    /**
+     * List every submission of a user, with its answers, recomputed top
+     * formations and the level chosen at test time. Newest first.
+     *
+     * Powers the GET /me/tests endpoint backing the user account page (F8).
+     * Recommendations are recomputed on the fly from the saved answers
+     * rather than persisted: the formations table can change between two
+     * tests, so re-running the engine guarantees fresh, consistent results.
+     *
+     * @param int $userId Owner of the listing.
+     * @return array      Each entry: {id, user_level, completed_at, answers, formations}.
+     */
+    public static function listForUser(int $userId): array
+    {
+        $pdo = Database::getInstance();
+        $stmt = $pdo->prepare(
+            'SELECT id, user_level, completed_at FROM survey_responses
+             WHERE  user_id = ?
+             ORDER  BY completed_at DESC'
+        );
+        $stmt->execute([$userId]);
+        $responses = $stmt->fetchAll();
+
+        if (empty($responses)) return [];
+
+        $answersStmt = $pdo->prepare(
+            'SELECT question_key, question_text, chosen_value, chosen_label
+             FROM   response_answers
+             WHERE  response_id = ?
+             ORDER  BY id ASC'
+        );
+
+        $list = [];
+        foreach ($responses as $response) {
+            $answersStmt->execute([$response['id']]);
+            $answers = $answersStmt->fetchAll();
+            $level   = $response['user_level'] !== null ? (int) $response['user_level'] : null;
+
+            $list[] = [
+                'id'           => (int) $response['id'],
+                'user_level'   => $level,
+                'completed_at' => $response['completed_at'],
+                'answers'      => $answers,
+                'formations'   => Formation::recommend($answers, $level),
+            ];
+        }
+
+        return $list;
     }
 }

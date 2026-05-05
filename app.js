@@ -21,7 +21,19 @@
     currentIndex: 0,     // Index of the question currently on screen
     currentUser:  null,  // null when visitor is a guest
     csrfToken:    '',    // Required header for state-changing requests
+    userLevel:    null,  // Canonical study level (0/5/6/7/8) — set on view-level
+    testMode:     'full',// 'quick' (10 questions) or 'full' (30) — set on view-start
   };
+
+  // Slider position (0..4) → canonical study level passed to the API.
+  // Mirrors docs/scope-formations.md "Mapping niveau utilisateur → éligibles".
+  var LEVEL_MAP = [
+    { value: 0, label: 'Sans diplôme', helper: 'Pas de formation CNAM accessible directement.' },
+    { value: 5, label: 'Bac',          helper: 'Niveau 5 (CC, CP, RNCP niv 5).' },
+    { value: 6, label: 'Bac+2',        helper: 'Niveaux 5 + 6 (Licences générales/pro).' },
+    { value: 7, label: 'Bac+3',        helper: 'Niveaux 5 + 6 + 7 (Ingés, RNCP niv 7).' },
+    { value: 8, label: 'Bac+5+',       helper: 'Toutes les formations du périmètre.' },
+  ];
 
   // ── DOM references ────────────────────────────────────────────────────────
   // Cached once at boot so renders avoid repeated getElementById lookups.
@@ -40,8 +52,14 @@
     optionsContainer: document.getElementById('options-container'),
     formationsList:   document.getElementById('formations-list'),
     saveCta:          document.getElementById('save-cta'),
-    btnStart:         document.getElementById('btn-start'),
+    btnStartQuick:    document.getElementById('btn-start-quick'),
+    btnStartFull:     document.getElementById('btn-start-full'),
     btnRestart:       document.getElementById('btn-restart'),
+    levelInput:       document.getElementById('level-input'),
+    levelCurrent:     document.getElementById('level-current'),
+    levelWarning:     document.getElementById('level-warning'),
+    btnLevelConfirm:  document.getElementById('btn-level-confirm'),
+    btnBackQuestion:  document.getElementById('btn-back-question'),
   };
 
   // Default fallback recipient when a formation has no contact_email — keeps
@@ -52,13 +70,28 @@
    * Toggle which `<section id="view-*">` is visible.
    * Also shows/hides the progress bar (only relevant in the question view).
    *
-   * @param {'start'|'question'|'result'} name Name of the view to activate.
+   * @param {'start'|'level'|'question'|'result'} name Name of the view to activate.
    */
   function showView(name) {
-    ['start', 'question', 'result'].forEach(function (viewName) {
+    ['start', 'level', 'question', 'result'].forEach(function (viewName) {
       document.getElementById('view-' + viewName).classList.toggle('active', viewName === name);
     });
     elements.progressBarWrap.classList.toggle('hidden', name !== 'question');
+  }
+
+  /**
+   * Reflect the current slider position into the live label and toggle the
+   * "no-formation" warning when the user picks "Sans diplôme". Pure DOM —
+   * the canonical level value is only committed on btn-level-confirm click.
+   */
+  function updateLevelDisplay() {
+    var idx   = parseInt(elements.levelInput.value, 10) || 0;
+    var entry = LEVEL_MAP[idx];
+    elements.levelCurrent.textContent = entry.label + ' — ' + entry.helper;
+    elements.levelWarning.classList.toggle('hidden', entry.value !== 0);
+    // Disable the CTA when "Sans diplôme" so we don't push them into a
+    // questionnaire whose result will be filtered down to nothing useful.
+    elements.btnLevelConfirm.disabled = entry.value === 0;
   }
 
   /**
@@ -143,13 +176,18 @@
       return state.answers[question.id];
     });
 
+    var payload = { answers: answersArray };
+    // user_level is only sent when the slider was actually used (non-null);
+    // both endpoints whitelist 5/6/7/8 server-side, anything else = no filter.
+    if (state.userLevel !== null) payload.user_level = state.userLevel;
+
     // Persist only for logged-in users; guests get results without storage.
     if (state.currentUser) {
       fetch('api/answers', {
         method:      'POST',
         credentials: 'include',
         headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': state.csrfToken },
-        body:        JSON.stringify({ answers: answersArray }),
+        body:        JSON.stringify(payload),
       }).catch(function () {}); // best-effort, user already sees results anyway
     }
 
@@ -157,7 +195,7 @@
     fetch('api/recommend', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ answers: answersArray }),
+      body:    JSON.stringify(payload),
     })
     .then(function (response) { return response.ok ? response.json() : { formations: [] }; })
     .then(function (data)     { showResult(data.formations || []); })
@@ -269,14 +307,39 @@
   }
 
   /**
+   * Go back one step in the questionnaire flow.
+   *
+   * From a question: drop the answer for the previous question (so the user
+   * can pick again) and re-render it. From the very first question, fall
+   * back to the level-slider view. The currently displayed question's own
+   * answer was never recorded (handleAnswer advances right after recording),
+   * so only the previous one needs to be cleared.
+   */
+  function goBackQuestion() {
+    if (state.currentIndex === 0) {
+      showView('level');
+      return;
+    }
+    state.currentIndex--;
+    var prevQuestion = state.questions[state.currentIndex];
+    delete state.answers[prevQuestion.id];
+    renderQuestion();
+  }
+
+  /**
    * Reset the in-memory state and return to the start screen.
    * Does not clear `state.questions` — those are still valid.
    */
   function restart() {
     state.answers      = {};
     state.currentIndex = 0;
+    state.userLevel    = null;
+    state.testMode     = 'full';
     elements.progressBar.style.width = '0%';
     elements.saveCta.classList.add('hidden');
+    // Re-enable the start CTAs disabled by startTest() during the previous run.
+    elements.btnStartQuick.disabled = false;
+    elements.btnStartFull.disabled  = false;
     showView('start');
   }
 
@@ -312,11 +375,54 @@
   }
 
   /**
+   * Click handler shared by the two start CTAs. Loads the right question
+   * subset for the chosen mode, then routes to the level slider.
+   *
+   * Disables both buttons while the fetch is in flight so a double-click
+   * doesn't trigger overlapping requests / inconsistent state.
+   *
+   * @param {'quick'|'full'} mode Test depth picked by the user.
+   */
+  function startTest(mode) {
+    state.testMode = mode;
+    elements.btnStartQuick.disabled = true;
+    elements.btnStartFull.disabled  = true;
+
+    fetch('api/questions?mode=' + encodeURIComponent(mode))
+      .then(function (response) {
+        if (!response.ok) throw new Error('Impossible de charger les questions');
+        return response.json();
+      })
+      .then(function (data) {
+        if (!data.questions || data.questions.length === 0) {
+          throw new Error('Aucune question disponible');
+        }
+        state.questions    = data.questions;
+        state.answers      = {};
+        state.currentIndex = 0;
+
+        // Reset the slider to "Bac+2" so a previous run doesn't leak.
+        elements.levelInput.value = 2;
+        updateLevelDisplay();
+        showView('level');
+      })
+      .catch(function () {
+        // Restore the start screen so the user can retry; failures here are
+        // typically transient (network) rather than user errors.
+        elements.btnStartQuick.disabled = false;
+        elements.btnStartFull.disabled  = false;
+        alert('Impossible de charger les questions. Réessayez.');
+      });
+  }
+
+  /**
    * Bootstrap the app on DOMContentLoaded.
    *
    * The promise chain is ordered:
-   *   CSRF token -> auth check -> questions fetch -> render start screen.
-   * Any error in this chain renders a fallback error screen.
+   *   CSRF token -> auth check -> render start screen.
+   * Questions are loaded lazily once the user picks a test mode (see
+   * startTest), which avoids fetching the full 30-question payload for
+   * visitors who never start a test.
    */
   function init() {
     // Step 1: get the CSRF token (mandatory for the logout POST later).
@@ -332,30 +438,37 @@
       .catch(function ()         { return null; })
       .then(function (user) {
         setupHeader(user);
-        // Step 3: load the questionnaire content.
-        return fetch('api/questions');
-      })
-      .then(function (response) {
-        if (!response.ok) throw new Error('Impossible de charger les questions');
-        return response.json();
-      })
-      .then(function (data) {
-        if (!data.questions || data.questions.length === 0) {
-          throw new Error('Aucune question disponible');
-        }
-        state.questions = data.questions;
 
         document.title                   = 'Test d\'orientation';
         elements.title.textContent       = 'Test d\'orientation';
-        elements.description.textContent = 'Répondez à quelques questions pour découvrir la formation qui vous correspond le mieux.';
+        elements.description.textContent = 'Choisissez la profondeur du test pour découvrir les formations CNAM qui vous correspondent.';
 
-        elements.btnStart.addEventListener('click', function () {
+        elements.btnStartQuick.addEventListener('click', function () { startTest('quick'); });
+        elements.btnStartFull.addEventListener('click',  function () { startTest('full');  });
+
+        elements.levelInput.addEventListener('input',  updateLevelDisplay);
+        elements.levelInput.addEventListener('change', updateLevelDisplay);
+        elements.btnLevelConfirm.addEventListener('click', function () {
+          var idx = parseInt(elements.levelInput.value, 10) || 0;
+          state.userLevel = LEVEL_MAP[idx].value;
           showView('question');
           renderQuestion();
         });
 
         elements.btnRestart.addEventListener('click', restart);
+        elements.btnBackQuestion.addEventListener('click', goBackQuestion);
 
+        // "Retour" buttons declared via data-back-target (e.g. on view-level)
+        // route straight to the named view without touching question state.
+        document.querySelectorAll('.btn-back[data-back-target]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            showView(btn.dataset.backTarget);
+          });
+        });
+
+        // Initialise the slider label so it reads correctly even if the user
+        // never clicks a start CTA (e.g. they navigate via keyboard).
+        updateLevelDisplay();
         showView('start');
       })
       .catch(function (err) {
@@ -363,7 +476,7 @@
         document.body.innerHTML =
           '<div style="padding:2rem;color:#b91c1c;max-width:480px;margin:2rem auto">' +
           '<h2 style="margin-bottom:.5rem">Erreur</h2>' +
-          '<p>' + err.message + '</p></div>';
+          '<p>' + (err && err.message || 'Erreur inconnue') + '</p></div>';
       });
   }
 

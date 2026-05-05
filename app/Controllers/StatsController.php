@@ -48,8 +48,16 @@ class StatsController
 
         // 2) Distribution per question — one row per (question, chosen_label)
         //    with its count. Re-grouped in PHP into a nested structure.
+        //
+        // ANY_VALUE() wraps `question_text` because it isn't in GROUP BY:
+        // MySQL 8.x with ONLY_FULL_GROUP_BY (default) rejects the query
+        // otherwise. The text is denormalised per answer so picking any
+        // matching row is correct — they all share the same question_key.
         $distributionRows = $pdo->query(
-            'SELECT ra.question_key, ra.question_text, ra.chosen_label, COUNT(*) AS cnt
+            'SELECT ra.question_key,
+                    ANY_VALUE(ra.question_text) AS question_text,
+                    ra.chosen_label,
+                    COUNT(*) AS cnt
              FROM   response_answers ra
              GROUP  BY ra.question_key, ra.chosen_label
              ORDER  BY ra.question_key, ra.chosen_label'

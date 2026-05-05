@@ -209,63 +209,60 @@
   // QUESTIONS TAB
   // ═══════════════════════════════════════════════════════════
 
+  // Cache the formations list once per tab load — needed by the editor modal
+  // to render the per-option scoring grid. Refreshed on every loadQuestions().
+  var formationsCache = [];
+
   /**
-   * Fetch the full question list for the admin (active + inactive).
+   * Load both the questions list and the formations catalogue in parallel,
+   * then hand off to renderQuestions. Formations are cached for the modal.
    */
   function loadQuestions() {
-    fetch('api/admin/questions', { credentials: 'include' })
-      .then(function (response) { if (!response.ok) throw new Error(); return response.json(); })
-      .then(renderQuestions)
-      .catch(function () { contentRoot.innerHTML = '<p class="admin-error">Erreur lors du chargement des questions.</p>'; });
+    Promise.all([
+      fetch('api/admin/questions',  { credentials: 'include' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
+      fetch('api/admin/formations', { credentials: 'include' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
+    ])
+      .then(function (results) {
+        formationsCache = results[1].formations || [];
+        renderQuestions(results[0]);
+      })
+      .catch(function () {
+        contentRoot.innerHTML = '<p class="admin-error">Erreur lors du chargement des questions.</p>';
+      });
   }
 
   /**
-   * Render the questions CRUD list and wire up edit/delete/add buttons.
+   * Render the modern question grid: one card per question with key, badges,
+   * full text, options as pills, and inline edit/delete buttons.
    *
    * @param {object} data Payload with a `questions` array.
    */
   function renderQuestions(data) {
     var html = '<section class="admin-section">';
     html += '<div class="admin-section-header">';
-    html += '<h2 class="admin-section-title">Questions (' + data.questions.length + ')</h2>';
-    html += '<button class="btn-primary btn-sm" id="btn-add-question">+ Ajouter</button>';
+    html += '<h2 class="admin-section-title">Questions <span class="muted">(' + data.questions.length + ')</span></h2>';
+    html += '<button class="btn-primary btn-sm" id="btn-add-question">+ Nouvelle question</button>';
     html += '</div>';
-    html += '<div id="question-form-area"></div>';
 
-    data.questions.forEach(function (question) {
-      html += '<div class="crud-item" id="q-item-' + question.id + '">';
-      html += '<div class="crud-item-header">';
-      html += '<div>';
-      html += '<span class="crud-item-key">' + escapeHtml(question.question_key) + '</span> ';
-      html += '<span class="crud-badge ' + (question.active ? 'badge-active' : 'badge-inactive') + '">' +
-              (question.active ? 'Actif' : 'Inactif') + '</span>';
-      html += '<p class="crud-item-text">' + escapeHtml(question.text) + '</p>';
-      var optionLabels = question.options.map(function (o) { return escapeHtml(o.label); }).join(' / ');
-      html += '<p class="crud-item-meta">Options : ' + optionLabels + '</p>';
+    if (data.questions.length === 0) {
+      html += '<div class="empty-state"><p>Aucune question pour le moment.</p>' +
+              '<p class="muted">Cliquez sur « Nouvelle question » pour commencer.</p></div>';
+    } else {
+      html += '<div class="q-grid">';
+      data.questions.forEach(function (question) {
+        html += renderQuestionCard2(question);
+      });
       html += '</div>';
-      html += '<div class="crud-item-actions">';
-      // Serialise the question into data-* attrs so the edit handler needs no extra fetch.
-      html += '<button class="btn-secondary btn-sm btn-edit-question" data-id="' + question.id + '" ' +
-              'data-text="' + escapeHtml(question.text) + '" data-sort="' + question.sort_order + '" data-active="' + question.active + '">Modifier</button>';
-      html += '<button class="btn-danger btn-sm btn-delete-question" data-id="' + question.id + '">Supprimer</button>';
-      html += '</div></div></div>';
-    });
+    }
 
     html += '</section>';
     contentRoot.innerHTML = html;
 
     document.getElementById('btn-add-question').addEventListener('click', function () {
-      showQuestionForm(null);
+      openQuestionModal(null);
     });
     document.querySelectorAll('.btn-edit-question').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        showQuestionForm({
-          id:         parseInt(btn.dataset.id),
-          text:       btn.dataset.text,
-          sort_order: parseInt(btn.dataset.sort),
-          active:     btn.dataset.active === '1',
-        });
-      });
+      btn.addEventListener('click', function () { openQuestionModal(parseInt(btn.dataset.id)); });
     });
     document.querySelectorAll('.btn-delete-question').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -276,44 +273,296 @@
   }
 
   /**
-   * Render the inline "create / edit question" form.
+   * Build one question card (modern grid view).
    *
-   * @param {object|null} question Existing question for edit mode, null for create.
+   * @param {object} question Question with options[].
+   * @returns {string}        HTML.
    */
-  function showQuestionForm(question) {
-    var area = document.getElementById('question-form-area');
-    if (!area) return;
-    var isNew = !question;
-    area.innerHTML =
-      '<div class="crud-form">' +
-      '<h3>' + (isNew ? 'Nouvelle question' : 'Modifier la question') + '</h3>' +
-      // question_key is only editable at creation — it's referenced elsewhere.
-      (isNew ? '<div class="field"><label>Clé (ex: q11)</label><input id="qf-key" type="text" value=""></div>' : '') +
-      '<div class="field"><label>Texte</label><input id="qf-text" type="text" value="' + (question ? escapeHtml(question.text) : '') + '"></div>' +
-      '<div class="field"><label>Ordre</label><input id="qf-sort" type="number" value="' + (question ? question.sort_order : 0) + '"></div>' +
-      (!isNew ? '<div class="field"><label><input id="qf-active" type="checkbox"' + (question.active ? ' checked' : '') + '> Active</label></div>' : '') +
-      '<div class="crud-form-actions">' +
-      '<button class="btn-primary btn-sm" id="qf-submit">' + (isNew ? 'Créer' : 'Enregistrer') + '</button>' +
-      '<button class="btn-secondary btn-sm" id="qf-cancel">Annuler</button>' +
-      '</div></div>';
+  function renderQuestionCard2(question) {
+    var html = '<article class="q-grid-card">';
+    html += '<header class="q-grid-card-head">';
+    html += '<div class="q-grid-card-tags">';
+    html += '<span class="tag tag-key">' + escapeHtml(question.question_key) + '</span>';
+    html += '<span class="tag ' + (question.active ? 'tag-on' : 'tag-off') + '">' +
+            (question.active ? '● Actif' : '○ Inactif') + '</span>';
+    if (question.quick) html += '<span class="tag tag-quick">⚡ Quick</span>';
+    html += '</div>';
+    html += '<div class="q-grid-card-actions">';
+    html += '<button class="icon-btn btn-edit-question" data-id="' + question.id + '" title="Modifier">✎</button>';
+    html += '<button class="icon-btn icon-btn-danger btn-delete-question" data-id="' + question.id + '" title="Supprimer">✕</button>';
+    html += '</div>';
+    html += '</header>';
+    html += '<p class="q-grid-card-text">' + escapeHtml(question.text) + '</p>';
 
-    document.getElementById('qf-cancel').addEventListener('click', function () {
-      area.innerHTML = '';
+    if (question.options && question.options.length > 0) {
+      html += '<div class="q-grid-card-options">';
+      question.options.forEach(function (opt) {
+        html += '<span class="option-pill">' + escapeHtml(opt.label) + '</span>';
+      });
+      html += '</div>';
+    }
+    html += '</article>';
+    return html;
+  }
+
+  /**
+   * Open the question editor modal.
+   *
+   * For an existing question, the full payload (question + options + scores)
+   * is fetched first and used to pre-populate the form. For creation, the
+   * server uses the legacy POST /admin/questions endpoint (key + text only),
+   * then the user reopens it for full edit.
+   *
+   * @param {number|null} id Question id, or null to create.
+   */
+  function openQuestionModal(id) {
+    if (id === null) {
+      openCreateQuestionModal();
+      return;
+    }
+    fetch('api/admin/question?id=' + id, { credentials: 'include' })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (data) {
+        renderQuestionEditorModal(data.question);
+      })
+      .catch(function () { alert('Erreur lors du chargement de la question.'); });
+  }
+
+  /**
+   * Modal step 1 for creating a new question: ask for key + text only.
+   * After save, immediately open the full editor on the newly-created row.
+   */
+  function openCreateQuestionModal() {
+    var modal = createModalShell('Nouvelle question');
+    modal.body.innerHTML =
+      '<div class="field"><label>Identifiant court (ex : q11, q24q)</label>' +
+      '<input id="nq-key" type="text" placeholder="ex : q11" autocomplete="off"></div>' +
+      '<div class="field"><label>Énoncé de la question</label>' +
+      '<textarea id="nq-text" rows="3" placeholder="ex : Je préfère travailler en équipe."></textarea></div>' +
+      '<div class="field"><label>Ordre d\'affichage</label>' +
+      '<input id="nq-sort" type="number" value="0"></div>';
+
+    modal.footer.innerHTML =
+      '<button class="btn-secondary" data-modal-close>Annuler</button>' +
+      '<button class="btn-primary" id="nq-create">Créer puis configurer</button>';
+    wireModalClose(modal);
+
+    modal.body.querySelector('#nq-key').focus();
+    modal.footer.querySelector('#nq-create').addEventListener('click', function () {
+      var key  = modal.body.querySelector('#nq-key').value.trim();
+      var text = modal.body.querySelector('#nq-text').value.trim();
+      var sort = parseInt(modal.body.querySelector('#nq-sort').value) || 0;
+      if (!key || !text) { alert('Identifiant et énoncé requis.'); return; }
+      apiCall('POST', 'api/admin/questions', { question_key: key, text: text, sort_order: sort }, function (resp) {
+        closeModal(modal);
+        // Re-open the freshly-created row in the full editor so the admin
+        // can immediately add options and assign formations.
+        openQuestionModal(resp.id);
+      });
     });
+  }
 
-    document.getElementById('qf-submit').addEventListener('click', function () {
-      var text = document.getElementById('qf-text').value.trim();
-      var sort = parseInt(document.getElementById('qf-sort').value) || 0;
-      if (!text) { alert('Le texte est requis.'); return; }
+  /**
+   * The big editor modal: question text + options (with their values + labels)
+   * + per-option formation scoring grid.
+   *
+   * Local state lives on the modal element. On save, the whole tree is sent
+   * to PUT /admin/question?id=X which reconciles the diff server-side.
+   *
+   * @param {object} q Full question payload from GET /admin/question.
+   */
+  function renderQuestionEditorModal(q) {
+    var modal = createModalShell('Modifier la question — ' + q.question_key, 'modal-wide');
 
-      if (isNew) {
-        var key = document.getElementById('qf-key').value.trim();
-        if (!key) { alert('La clé est requise.'); return; }
-        apiCall('POST', 'api/admin/questions', { question_key: key, text: text, sort_order: sort }, function () { loadQuestions(); });
+    // Internal state mutated by the option/score editors below.
+    // Cloned from q.options so we can edit freely without touching the source.
+    var state = {
+      text:       q.text,
+      sort_order: q.sort_order,
+      active:     !!q.active,
+      quick:      !!q.quick,
+      options:    (q.options || []).map(function (o) {
+        return {
+          id:         o.id,
+          value:      o.value,
+          label:      o.label,
+          sort_order: o.sort_order,
+          // Normalise scores to a plain object keyed by formation id.
+          scores:    Object.assign({}, o.scores || {}),
+        };
+      }),
+    };
+    if (state.options.length === 0) {
+      // Bootstrap with two empty options for a brand-new question.
+      state.options = [
+        { id: null, value: 'A', label: '', sort_order: 0, scores: {} },
+        { id: null, value: 'B', label: '', sort_order: 1, scores: {} },
+      ];
+    }
+
+    rerender();
+    wireModalClose(modal);
+
+    // ── Body markup is rebuilt on every state change for simplicity.
+    function rerender() {
+      var html = '';
+
+      // Question metadata.
+      html += '<div class="modal-section">';
+      html += '<div class="field"><label>Énoncé de la question</label>' +
+              '<textarea id="ed-text" rows="3">' + escapeHtml(state.text) + '</textarea></div>';
+      html += '<div class="field-row">';
+      html += '<div class="field"><label>Ordre</label><input id="ed-sort" type="number" value="' + state.sort_order + '"></div>';
+      html += '<div class="field-checks">';
+      html += '<label class="check"><input id="ed-active" type="checkbox"' + (state.active ? ' checked' : '') + '> Active</label>';
+      html += '<label class="check"><input id="ed-quick" type="checkbox"' + (state.quick ? ' checked' : '') + '> Test rapide (10 questions)</label>';
+      html += '</div>';
+      html += '</div>';
+      html += '</div>';
+
+      // Options + scores.
+      html += '<div class="modal-section">';
+      html += '<div class="modal-section-head">';
+      html += '<h4>Réponses possibles & formations associées</h4>';
+      html += '<button class="btn-secondary btn-sm" id="ed-add-opt">+ Ajouter une réponse</button>';
+      html += '</div>';
+
+      state.options.forEach(function (opt, idx) {
+        html += renderOptionEditor(opt, idx);
+      });
+
+      html += '</div>';
+
+      modal.body.innerHTML = html;
+      bindEditorEvents();
+    }
+
+    /**
+     * Render the editor block for one option: meta inputs + scoring grid.
+     *
+     * @param {object} opt Option state slice.
+     * @param {number} idx Position in state.options.
+     */
+    function renderOptionEditor(opt, idx) {
+      var html = '<div class="opt-editor" data-idx="' + idx + '">';
+      html += '<div class="opt-editor-head">';
+      html += '<div class="opt-meta">';
+      html += '<div class="field field-tight"><label>Code</label>' +
+              '<input class="opt-value" type="text" value="' + escapeHtml(opt.value) + '" maxlength="20"></div>';
+      html += '<div class="field field-tight field-grow"><label>Libellé affiché</label>' +
+              '<input class="opt-label" type="text" value="' + escapeHtml(opt.label) + '"></div>';
+      html += '</div>';
+      // Don't allow deleting below 2 options (binary test minimum).
+      var canRemove = state.options.length > 2;
+      html += '<button class="icon-btn icon-btn-danger opt-remove" ' +
+              (canRemove ? '' : 'disabled title="Au moins 2 options requises"') +
+              ' title="Retirer cette réponse">✕</button>';
+      html += '</div>';
+
+      // Formation scoring grid.
+      html += '<div class="score-grid">';
+      html += '<p class="score-grid-help">Cochez les formations recommandées si l\'utilisateur choisit cette réponse, ' +
+              'puis ajustez le poids (1 = peu, 5 = très fort).</p>';
+      if (formationsCache.length === 0) {
+        html += '<p class="muted">Aucune formation disponible. Créez-en dans l\'onglet Formations.</p>';
       } else {
-        var active = document.getElementById('qf-active').checked;
-        apiCall('PUT', 'api/admin/questions?id=' + question.id, { text: text, sort_order: sort, active: active }, function () { loadQuestions(); });
+        html += '<ul class="formation-list">';
+        formationsCache.forEach(function (f) {
+          var pts = parseInt(opt.scores[f.id] || 0);
+          var on  = pts > 0;
+          html += '<li class="formation-row' + (on ? ' is-on' : '') + '">';
+          html += '<label class="formation-toggle">';
+          html += '<input type="checkbox" class="opt-formation-on" data-fid="' + f.id + '"' + (on ? ' checked' : '') + '>';
+          html += '<span class="formation-name">' + escapeHtml(f.name) + '</span>';
+          html += '</label>';
+          html += '<div class="formation-points' + (on ? '' : ' is-hidden') + '">';
+          html += '<input type="range" class="opt-formation-pts" data-fid="' + f.id + '" min="1" max="5" value="' + (on ? pts : 1) + '">';
+          html += '<output class="formation-pts-out">' + (on ? pts : 1) + '</output>';
+          html += '</div>';
+          html += '</li>';
+        });
+        html += '</ul>';
       }
+      html += '</div></div>';
+      return html;
+    }
+
+    /**
+     * Wire all interactive handlers after a re-render.
+     * Inputs write back to `state` immediately so the model stays in sync.
+     */
+    function bindEditorEvents() {
+      modal.body.querySelector('#ed-text').addEventListener('input', function (e) { state.text = e.target.value; });
+      modal.body.querySelector('#ed-sort').addEventListener('input', function (e) { state.sort_order = parseInt(e.target.value) || 0; });
+      modal.body.querySelector('#ed-active').addEventListener('change', function (e) { state.active = e.target.checked; });
+      modal.body.querySelector('#ed-quick').addEventListener('change', function (e) { state.quick = e.target.checked; });
+
+      modal.body.querySelector('#ed-add-opt').addEventListener('click', function () {
+        state.options.push({ id: null, value: '', label: '', sort_order: state.options.length, scores: {} });
+        rerender();
+      });
+
+      modal.body.querySelectorAll('.opt-editor').forEach(function (el) {
+        var idx = parseInt(el.dataset.idx);
+        el.querySelector('.opt-value').addEventListener('input', function (e) { state.options[idx].value = e.target.value; });
+        el.querySelector('.opt-label').addEventListener('input', function (e) { state.options[idx].label = e.target.value; });
+        var rm = el.querySelector('.opt-remove');
+        if (rm && !rm.disabled) {
+          rm.addEventListener('click', function () {
+            if (!confirm('Retirer cette réponse ? Les pondérations associées seront supprimées.')) return;
+            state.options.splice(idx, 1);
+            rerender();
+          });
+        }
+
+        // Toggle formation on/off + reveal/hide its points slider.
+        el.querySelectorAll('.opt-formation-on').forEach(function (chk) {
+          chk.addEventListener('change', function (e) {
+            var fid = parseInt(e.target.dataset.fid);
+            var row = e.target.closest('.formation-row');
+            var pts = row.querySelector('.formation-points');
+            if (e.target.checked) {
+              var slider = row.querySelector('.opt-formation-pts');
+              state.options[idx].scores[fid] = parseInt(slider.value) || 1;
+              row.classList.add('is-on');
+              pts.classList.remove('is-hidden');
+            } else {
+              delete state.options[idx].scores[fid];
+              row.classList.remove('is-on');
+              pts.classList.add('is-hidden');
+            }
+          });
+        });
+        el.querySelectorAll('.opt-formation-pts').forEach(function (sl) {
+          sl.addEventListener('input', function (e) {
+            var fid = parseInt(e.target.dataset.fid);
+            var pts = parseInt(e.target.value) || 1;
+            // Keep the live readout in sync alongside the slider.
+            e.target.parentElement.querySelector('.formation-pts-out').textContent = pts;
+            // Only persist if the formation is currently checked.
+            if (state.options[idx].scores[fid] !== undefined) {
+              state.options[idx].scores[fid] = pts;
+            }
+          });
+        });
+      });
+    }
+
+    // Footer with Save + Cancel.
+    modal.footer.innerHTML =
+      '<button class="btn-secondary" data-modal-close>Annuler</button>' +
+      '<button class="btn-primary" id="ed-save">Enregistrer</button>';
+    modal.footer.querySelector('#ed-save').addEventListener('click', function () {
+      // Final guards mirroring the server checks.
+      if (!state.text.trim())                 { alert('Un énoncé est requis.'); return; }
+      if (state.options.length < 2)           { alert('Au moins 2 réponses sont requises.'); return; }
+      var bad = state.options.some(function (o) { return !o.value.trim() || !o.label.trim(); });
+      if (bad) { alert('Chaque réponse doit avoir un code et un libellé.'); return; }
+
+      apiCall('PUT', 'api/admin/question?id=' + q.id, state, function () {
+        closeModal(modal);
+        loadQuestions();
+      });
     });
   }
 
@@ -528,5 +777,71 @@
   function formatDate(str) {
     if (!str) return '—';
     return new Date(str).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // MODAL UTILITIES
+  // ═══════════════════════════════════════════════════════════
+
+  /**
+   * Build and append a modal shell (overlay + dialog + header + body + footer).
+   * Returns references the caller fills in directly.
+   *
+   * @param {string} title      Header text.
+   * @param {string} extraClass Optional additional class for sizing variants
+   *                            (e.g. 'modal-wide').
+   * @returns {{root: HTMLElement, body: HTMLElement, footer: HTMLElement}}
+   */
+  function createModalShell(title, extraClass) {
+    var root = document.createElement('div');
+    root.className = 'modal-overlay' + (extraClass ? ' ' + extraClass : '');
+    root.innerHTML =
+      '<div class="modal" role="dialog" aria-modal="true">' +
+      '  <header class="modal-head">' +
+      '    <h3>' + escapeHtml(title) + '</h3>' +
+      '    <button class="icon-btn modal-x" aria-label="Fermer" data-modal-close>✕</button>' +
+      '  </header>' +
+      '  <div class="modal-body"></div>' +
+      '  <footer class="modal-foot"></footer>' +
+      '</div>';
+    document.body.appendChild(root);
+    document.body.classList.add('modal-open');
+
+    return {
+      root:   root,
+      body:   root.querySelector('.modal-body'),
+      footer: root.querySelector('.modal-foot'),
+    };
+  }
+
+  /**
+   * Wire close buttons (any element with [data-modal-close]) and overlay
+   * click + Escape key to close the modal.
+   *
+   * @param {{root: HTMLElement}} modal Shell from createModalShell.
+   */
+  function wireModalClose(modal) {
+    modal.root.querySelectorAll('[data-modal-close]').forEach(function (el) {
+      el.addEventListener('click', function () { closeModal(modal); });
+    });
+    // Click outside the dialog (on the overlay) closes too.
+    modal.root.addEventListener('click', function (e) {
+      if (e.target === modal.root) closeModal(modal);
+    });
+    // Escape closes — bound at document level, removed when modal closes.
+    function onKey(e) { if (e.key === 'Escape') closeModal(modal); }
+    document.addEventListener('keydown', onKey);
+    modal.root._onKey = onKey;
+  }
+
+  /**
+   * Tear down a modal: detach event handler and remove the DOM tree.
+   *
+   * @param {{root: HTMLElement}} modal Shell from createModalShell.
+   */
+  function closeModal(modal) {
+    if (modal.root._onKey) document.removeEventListener('keydown', modal.root._onKey);
+    if (modal.root.parentNode) modal.root.parentNode.removeChild(modal.root);
+    document.body.classList.remove('modal-open');
   }
 })();
