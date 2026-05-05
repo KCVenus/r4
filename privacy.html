@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#b21e35" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1e293b"  media="(prefers-color-scheme: dark)" />
+  <title>Politique de confidentialité — R4</title>
+  <script>(function(){try{var t=localStorage.getItem('r4-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+  <link rel="stylesheet" href="style.css?v=20260505144839" />
+  <script defer src="theme.js?v=20260505144839"></script>
+</head>
+<body>
+
+  <header id="app-header">
+    <div class="header-top">
+      <h1 id="app-title">Politique de confidentialité</h1>
+      <div class="user-info">
+        <a href="index.html" class="link-btn">← Retour</a>
+        <button class="theme-toggle" data-theme-toggle type="button">🌗</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="legal-main">
+    <section class="legal-section">
+      <h2>1. Qui sommes-nous ?</h2>
+      <p>R4 est un outil d'orientation interne au CNAM PACA développé dans le cadre d'un apprentissage. L'application permet de proposer des formations adaptées à partir d'un questionnaire d'orientation.</p>
+      <p>Pour toute question relative à vos données, contactez le responsable du traitement à l'adresse indiquée dans les <a href="legal.html">mentions légales</a>.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>2. Données collectées</h2>
+      <p>Nous collectons et stockons les informations suivantes :</p>
+      <ul>
+        <li><strong>Nom d'utilisateur</strong> (obligatoire) — identifiant de connexion.</li>
+        <li><strong>Adresse e-mail</strong> (facultative) — pour la récupération de compte.</li>
+        <li><strong>Mot de passe</strong> — stocké uniquement sous forme hachée (bcrypt), jamais en clair.</li>
+        <li><strong>Niveau d'études déclaré</strong> — pour filtrer les formations éligibles.</li>
+        <li><strong>Réponses au questionnaire</strong> — pour calculer les recommandations.</li>
+        <li><strong>Date d'inscription et date d'acceptation</strong> de la présente politique.</li>
+      </ul>
+      <p>Aucun cookie de pistage, aucun outil d'analytics tiers n'est utilisé. Une session technique est déposée pendant la durée de votre visite uniquement.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>3. Finalités du traitement</h2>
+      <ul>
+        <li>Authentification (nom d'utilisateur + mot de passe).</li>
+        <li>Personnalisation des recommandations de formations selon vos réponses.</li>
+        <li>Historique de vos tests pour relire vos résultats sur la page « Mon compte ».</li>
+        <li>Statistiques agrégées et anonymes pour améliorer le questionnaire.</li>
+      </ul>
+    </section>
+
+    <section class="legal-section">
+      <h2>4. Base légale</h2>
+      <p>Le traitement repose sur votre <strong>consentement explicite</strong> recueilli au moment de la création du compte (article 6.1.a du RGPD). Vous pouvez le retirer à tout moment en supprimant votre compte (cf. § 6).</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>5. Durée de conservation</h2>
+      <p>Vos données sont conservées tant que votre compte est actif. À la suppression du compte, l'ensemble des informations personnelles (compte, niveau, réponses, sessions de test) est effacé immédiatement.</p>
+      <p>Les statistiques agrégées anonymes peuvent être conservées sans limite à des fins d'amélioration du service ; elles ne contiennent aucun identifiant.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>6. Vos droits</h2>
+      <p>Conformément au RGPD, vous disposez des droits suivants :</p>
+      <ul>
+        <li><strong>Droit d'accès et de portabilité</strong> — bouton « Télécharger mes données » sur la page <a href="account.html">Mon compte</a>. Le fichier exporté est au format JSON et contient l'intégralité de vos données.</li>
+        <li><strong>Droit à l'effacement</strong> — bouton « Supprimer mon compte » sur la même page. La suppression est immédiate et définitive.</li>
+        <li><strong>Droit de rectification</strong> — modifiez votre adresse e-mail depuis la page « Mon compte » ou contactez-nous.</li>
+        <li><strong>Droit de retirer votre consentement</strong> — équivalent à la suppression du compte.</li>
+        <li><strong>Droit d'introduire une réclamation</strong> auprès de la <a href="https://www.cnil.fr" target="_blank" rel="noopener">CNIL</a>.</li>
+      </ul>
+    </section>
+
+    <section class="legal-section">
+      <h2>7. Sécurité</h2>
+      <p>Les mots de passe sont hachés avec l'algorithme bcrypt. Les sessions utilisent les attributs HttpOnly et SameSite=Lax pour limiter les risques d'XSS et de CSRF. Les requêtes mutantes exigent un jeton anti-CSRF. Les communications sont chiffrées en HTTPS sur l'environnement de production.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>8. Modifications</h2>
+      <p>Cette politique peut être mise à jour ; la date de dernière mise à jour figure ci-dessous. En cas de changement substantiel, vous serez informé à votre prochaine connexion.</p>
+      <p class="muted">Dernière mise à jour : mai 2026.</p>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <a href="privacy.html">Confidentialité</a>
+    <span class="footer-sep">·</span>
+    <a href="legal.html">Mentions légales</a>
+  </footer>
+
+</body>
+</html>
