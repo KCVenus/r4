@@ -111,10 +111,12 @@ class AdminController
     }
 
     /**
-     * PUT /admin/question?id=X — atomically save question + options + scores.
+     * PUT /admin/question?id=X — atomically save question + options + scores
+     * + test memberships.
      *
      * Body matches the shape returned by GET /admin/question, with the addition
-     * of a `quick` boolean and per-option `scores` map (formation_id => points).
+     * of a per-option `scores` map (formation_id => points) and an optional
+     * `test_ids` array listing which tests the question now belongs to.
      * The full state is sent every time; the server reconciles diffs.
      */
     public function saveQuestionFull(): void

@@ -1504,6 +1504,34 @@ section[id^="view-"].active {
 .tag-on  { background: rgba(22, 163, 74, 0.12);  color: var(--color-success); }
 .tag-off { background: rgba(100, 116, 139, 0.12); color: var(--color-text-muted); }
 .tag-quick { background: rgba(245, 158, 11, 0.15); color: #b45309; }
+.tag-tests { background: var(--color-primary-soft); color: var(--color-primary-dk); }
+
+/* ── Test-membership picker (inside question + test editors) ─────────────── */
+.test-membership {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-height: 320px;
+  overflow-y: auto;
+  padding: var(--space-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.check-test {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.check-test:hover { background: var(--color-primary-soft); }
+.check-test .test-name { flex: 1; font-size: 0.875rem; }
+.check-test .test-meta { font-size: 0.75rem; }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .tag-quick { color: #fbbf24; }

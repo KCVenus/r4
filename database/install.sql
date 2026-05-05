@@ -55,16 +55,15 @@ CREATE TABLE IF NOT EXISTS `response_answers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── 5. Questions ──────────────────────────────────────────────
--- quick = 1 → la question fait partie du test rapide (10 questions
--- cross-domaines). Sinon, la question n'apparaît que dans le test
--- complet (30 questions). Cf. migration_v5_quick.sql.
+-- L'appartenance à un test (rapide / complet / variante) est
+-- stockée dans le pivot `test_questions` ci-dessous, plus dans
+-- la colonne `quick` retirée par migration_v8_tests.sql.
 CREATE TABLE IF NOT EXISTS `questions` (
   `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `question_key` VARCHAR(50)  NOT NULL,
   `text`         TEXT         NOT NULL,
   `sort_order`   INT          NOT NULL DEFAULT 1,
   `active`       TINYINT(1)   NOT NULL DEFAULT 1,
-  `quick`        TINYINT(1)   NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_question_key` (`question_key`),
   CONSTRAINT `chk_questions_sort_order` CHECK (`sort_order` >= 1)
@@ -182,51 +181,50 @@ VALUES
    'Titre RNCP niveau 7 : pilotage supply chain, transport, achats, distribution. Code CNAM : CPN2700A.',
    'paca@cnam.fr', NULL, 1, 7);
 
--- ── 10. Données : 30 questions thématiques (cf. migration_v4 + v5) ─
--- Le drapeau quick = 1 marque les 10 questions retenues pour le test
--- rapide (une par grand domaine pour garantir la couverture des 18
--- formations). Les autres (quick = 0) n'apparaissent que dans le test
--- complet.
-INSERT IGNORE INTO `questions` (`id`, `question_key`, `text`, `sort_order`, `active`, `quick`) VALUES
+-- ── 10. Données : 30 questions thématiques (cf. migration_v4) ──
+-- L'appartenance des questions aux tests (rapide / complet / variantes
+-- créées par le coordinateur) est définie via le pivot test_questions
+-- ci-dessous (cf. migration_v8_tests.sql).
+INSERT IGNORE INTO `questions` (`id`, `question_key`, `text`, `sort_order`, `active`) VALUES
 -- Tech / dev / web / cyber / multimédia
-(1,  'q1',  'Vous êtes à l''aise avec un ordinateur au quotidien (logiciels, fichiers, web) ?', 1,  1, 1),
-(2,  'q2',  'Résoudre des problèmes logiques ou des énigmes vous attire ?',                     2,  1, 0),
-(3,  'q3',  'Coder ou écrire des scripts vous intéresse ?',                                     3,  1, 1),
-(4,  'q4',  'Concevoir des sites web ou des applications mobiles vous attire ?',                4,  1, 0),
-(5,  'q5',  'La cybersécurité (protéger des données, comprendre les menaces) vous passionne ?', 5,  1, 1),
-(6,  'q6',  'Le multimédia, la 3D, les jeux vidéo ou l''UX vous attirent ?',                    6,  1, 0),
+(1,  'q1',  'Vous êtes à l''aise avec un ordinateur au quotidien (logiciels, fichiers, web) ?', 1,  1),
+(2,  'q2',  'Résoudre des problèmes logiques ou des énigmes vous attire ?',                     2,  1),
+(3,  'q3',  'Coder ou écrire des scripts vous intéresse ?',                                     3,  1),
+(4,  'q4',  'Concevoir des sites web ou des applications mobiles vous attire ?',                4,  1),
+(5,  'q5',  'La cybersécurité (protéger des données, comprendre les menaces) vous passionne ?', 5,  1),
+(6,  'q6',  'Le multimédia, la 3D, les jeux vidéo ou l''UX vous attirent ?',                    6,  1),
 -- Compta / paie / fin / gestion
-(7,  'q7',  'Manipuler des tableurs et des chiffres au quotidien ne vous gêne pas ?',           7,  1, 0),
-(8,  'q8',  'La comptabilité, la fiscalité et la TVA vous semblent intéressantes ?',            8,  1, 1),
-(9,  'q9',  'Gérer la paie, les bulletins et le droit social vous attire ?',                    9,  1, 0),
-(10, 'q10', 'Faire de l''audit ou du contrôle de gestion vous tente ?',                        10,  1, 0),
+(7,  'q7',  'Manipuler des tableurs et des chiffres au quotidien ne vous gêne pas ?',           7,  1),
+(8,  'q8',  'La comptabilité, la fiscalité et la TVA vous semblent intéressantes ?',            8,  1),
+(9,  'q9',  'Gérer la paie, les bulletins et le droit social vous attire ?',                    9,  1),
+(10, 'q10', 'Faire de l''audit ou du contrôle de gestion vous tente ?',                        10,  1),
 -- RH / management
-(11, 'q11', 'Recruter, former et accompagner des collaborateurs vous motive ?',                11,  1, 1),
-(12, 'q12', 'Planifier les ressources humaines et les besoins en compétences vous attire ?',   12,  1, 0),
-(13, 'q13', 'Encadrer une équipe et prendre des décisions vous correspond ?',                  13,  1, 0),
+(11, 'q11', 'Recruter, former et accompagner des collaborateurs vous motive ?',                11,  1),
+(12, 'q12', 'Planifier les ressources humaines et les besoins en compétences vous attire ?',   12,  1),
+(13, 'q13', 'Encadrer une équipe et prendre des décisions vous correspond ?',                  13,  1),
 -- Commerce / vente / marketing
-(14, 'q14', 'Vous avez une fibre commerciale (négocier, convaincre) ?',                        14,  1, 1),
-(15, 'q15', 'Le marketing, la stratégie de marque ou la pub vous attirent ?',                  15,  1, 0),
-(16, 'q16', 'Le contact client direct vous est facile ?',                                      16,  1, 0),
+(14, 'q14', 'Vous avez une fibre commerciale (négocier, convaincre) ?',                        14,  1),
+(15, 'q15', 'Le marketing, la stratégie de marque ou la pub vous attirent ?',                  15,  1),
+(16, 'q16', 'Le contact client direct vous est facile ?',                                      16,  1),
 -- BTP / génie civil
-(17, 'q17', 'Visiter un chantier ou comprendre une structure de bâtiment vous intéresse ?',    17,  1, 1),
-(18, 'q18', 'Lire des plans et calculer le dimensionnement de structures vous attire ?',       18,  1, 0),
+(17, 'q17', 'Visiter un chantier ou comprendre une structure de bâtiment vous intéresse ?',    17,  1),
+(18, 'q18', 'Lire des plans et calculer le dimensionnement de structures vous attire ?',       18,  1),
 -- Électrotechnique / systèmes
-(19, 'q19', 'L''électricité, l''électronique ou l''automatisation vous fascinent ?',           19,  1, 1),
-(20, 'q20', 'Concevoir des systèmes embarqués ou des moteurs électriques vous tente ?',        20,  1, 0),
+(19, 'q19', 'L''électricité, l''électronique ou l''automatisation vous fascinent ?',           19,  1),
+(20, 'q20', 'Concevoir des systèmes embarqués ou des moteurs électriques vous tente ?',        20,  1),
 -- Logistique / supply chain
-(21, 'q21', 'Optimiser des flux (transport, stocks, achats) vous intéresse ?',                 21,  1, 1),
-(22, 'q22', 'Piloter une chaîne logistique à l''échelle d''une grande entreprise vous attire ?', 22, 1, 0),
+(21, 'q21', 'Optimiser des flux (transport, stocks, achats) vous intéresse ?',                 21,  1),
+(22, 'q22', 'Piloter une chaîne logistique à l''échelle d''une grande entreprise vous attire ?', 22, 1),
 -- Médico-social
-(23, 'q23', 'Travailler dans le secteur sanitaire, social ou médico-social vous motive ?',     23,  1, 1),
-(24, 'q24', 'Encadrer une structure pour publics fragiles (EHPAD, foyers) vous parle ?',       24,  1, 0),
+(23, 'q23', 'Travailler dans le secteur sanitaire, social ou médico-social vous motive ?',     23,  1),
+(24, 'q24', 'Encadrer une structure pour publics fragiles (EHPAD, foyers) vous parle ?',       24,  1),
 -- Style / soft skills / projection
-(25, 'q25', 'Vous travaillez plutôt en équipe ou en autonomie ?',                              25,  1, 0),
-(26, 'q26', 'La rigueur et la précision sont au cœur de votre façon de travailler ?',          26,  1, 0),
-(27, 'q27', 'Vous vous décririez comme créatif et imaginatif ?',                               27,  1, 0),
-(28, 'q28', 'Vous vous voyez plutôt sur un poste technique ou managérial ?',                   28,  1, 0),
-(29, 'q29', 'Vous voulez évoluer rapidement vers des responsabilités ?',                       29,  1, 0),
-(30, 'q30', 'Vous êtes prêt à reprendre des études longues (bac+5 type ingénieur) ?',          30,  1, 0);
+(25, 'q25', 'Vous travaillez plutôt en équipe ou en autonomie ?',                              25,  1),
+(26, 'q26', 'La rigueur et la précision sont au cœur de votre façon de travailler ?',          26,  1),
+(27, 'q27', 'Vous vous décririez comme créatif et imaginatif ?',                               27,  1),
+(28, 'q28', 'Vous vous voyez plutôt sur un poste technique ou managérial ?',                   28,  1),
+(29, 'q29', 'Vous voulez évoluer rapidement vers des responsabilités ?',                       29,  1),
+(30, 'q30', 'Vous êtes prêt à reprendre des études longues (bac+5 type ingénieur) ?',          30,  1);
 
 -- ── 11. Données : 60 options ──────────────────────────────────
 -- Toutes les questions sont binaires (oui/non) sauf q25 (équipe/autonomie)
@@ -280,7 +278,7 @@ INSERT IGNORE INTO `formation_scores` (`option_id`, `formation_id`, `points`) VA
 -- q5 oui (cybersécurité)
 (9, 14, 4), (9, 2, 1),
 -- q6 oui (multimédia/jeux)
-(11, 15, 4), (11, 1, 1),
+(11, 15, 4), (11, 1),
 -- q7 oui (tableurs/chiffres)
 (13, 3, 2), (13, 4, 3), (13, 5, 2), (13, 8, 2), (13, 18, 1), (13, 10, 1),
 -- q8 oui (compta/fiscalité)
@@ -320,25 +318,78 @@ INSERT IGNORE INTO `formation_scores` (`option_id`, `formation_id`, `points`) VA
 -- q25 équipe (managérial)
 (49, 7, 1), (49, 10, 1), (49, 13, 1), (49, 18, 1), (49, 9, 1),
 -- q25 autonomie (technique individuel)
-(50, 1, 1), (50, 2, 1), (50, 4, 1), (50, 6, 1), (50, 14, 1), (50, 17, 1),
+(50, 1), (50, 2, 1), (50, 4, 1), (50, 6, 1), (50, 14, 1), (50, 17, 1),
 -- q26 oui (rigueur/précision)
 (51, 4, 2), (51, 8, 2), (51, 14, 2), (51, 16, 1), (51, 17, 1), (51, 11, 1), (51, 12, 1),
 -- q27 oui (créatif)
 (53, 15, 3), (53, 1, 2),
 -- q28 technique
-(55, 1, 1), (55, 2, 1), (55, 6, 2), (55, 11, 1), (55, 12, 1), (55, 14, 2), (55, 15, 2), (55, 16, 2), (55, 17, 2),
+(55, 1), (55, 2, 1), (55, 6, 2), (55, 11, 1), (55, 12, 1), (55, 14, 2), (55, 15, 2), (55, 16, 2), (55, 17, 2),
 -- q28 managérial
 (56, 5, 1), (56, 7, 2), (56, 9, 1), (56, 10, 2), (56, 13, 1), (56, 18, 2),
 -- q29 oui (évolution/responsabilité)
 (57, 7, 2), (57, 10, 2), (57, 14, 2), (57, 15, 1), (57, 16, 2), (57, 17, 2), (57, 18, 3),
 -- q29 non (rester opérationnel)
-(58, 1, 1), (58, 2, 1), (58, 4, 1), (58, 6, 1), (58, 11, 1), (58, 12, 1),
+(58, 1), (58, 2, 1), (58, 4, 1), (58, 6, 1), (58, 11, 1), (58, 12, 1),
 -- q30 oui (études longues bac+5)
 (59, 14, 3), (59, 15, 3), (59, 16, 3), (59, 17, 3), (59, 18, 2),
 -- q30 non (formation courte)
 (60, 1, 2), (60, 2, 1), (60, 3, 1), (60, 4, 1), (60, 5, 1);
 
--- ── 13. Comptes par défaut ────────────────────────────────────
+-- ── 13. Tests (catalogue + pivot) ─────────────────────────────
+-- Architecture multi-tests (cf. migration_v8_tests.sql) : remplace
+-- l'ancien drapeau questions.quick. Permet aux coordinateurs de
+-- créer N variantes de longueur arbitraire.
+CREATE TABLE IF NOT EXISTS `tests` (
+  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `slug`        VARCHAR(50)  NOT NULL,
+  `name`        VARCHAR(100) NOT NULL,
+  `description` TEXT,
+  `active`      TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_by`  INT UNSIGNED DEFAULT NULL,
+  `created_at`  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_test_slug` (`slug`),
+  CONSTRAINT `fk_test_creator`
+    FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `test_questions` (
+  `test_id`     INT UNSIGNED NOT NULL,
+  `question_id` INT UNSIGNED NOT NULL,
+  `sort_order`  INT          NOT NULL DEFAULT 1,
+  PRIMARY KEY (`test_id`, `question_id`),
+  KEY `idx_tq_question` (`question_id`),
+  CONSTRAINT `fk_tq_test`
+    FOREIGN KEY (`test_id`)     REFERENCES `tests` (`id`)     ON DELETE CASCADE,
+  CONSTRAINT `fk_tq_question`
+    FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `chk_test_questions_sort_order` CHECK (`sort_order` >= 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seed des deux tests historiques.
+INSERT IGNORE INTO `tests` (`id`, `slug`, `name`, `description`) VALUES
+  (1, 'rapide',  'Test rapide',  'Une question par grand domaine. Idéal pour un premier aperçu (~3 min).'),
+  (2, 'complet', 'Test complet', 'Couverture détaillée + soft skills, pour un matching plus précis (~10 min).');
+
+-- Test rapide : 10 questions cross-domaines (q1, q3, q5, q8, q11, q14, q17, q19, q21, q23).
+INSERT IGNORE INTO `test_questions` (`test_id`, `question_id`, `sort_order`) VALUES
+  (1, 1,  1),
+  (1, 3,  2),
+  (1, 5,  3),
+  (1, 8,  4),
+  (1, 11, 5),
+  (1, 14, 6),
+  (1, 17, 7),
+  (1, 19, 8),
+  (1, 21, 9),
+  (1, 23, 10);
+
+-- Test complet : toutes les questions (1..30) dans l'ordre canonique.
+INSERT IGNORE INTO `test_questions` (`test_id`, `question_id`, `sort_order`)
+SELECT 2, `id`, `sort_order` FROM `questions` WHERE `active` = 1;
+
+-- ── 14. Comptes par défaut ────────────────────────────────────
 -- Mots de passe : user/user  et  admin/admin
 -- IMPORTANT : supprimer ou modifier ces comptes avant mise en production !
 INSERT IGNORE INTO `users` (`username`, `password_hash`, `role`) VALUES

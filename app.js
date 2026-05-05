@@ -22,7 +22,7 @@
     currentUser:  null,  // null when visitor is a guest
     csrfToken:    '',    // Required header for state-changing requests
     userLevel:    null,  // Canonical study level (0/5/6/7/8) — set on view-level
-    testMode:     'full',// 'quick' (10 questions) or 'full' (30) — set on view-start
+    testSlug:     'complet', // Slug of the chosen test variant (was a binary mode flag).
   };
 
   // Slider position (0..4) → canonical study level passed to the API.
@@ -334,7 +334,7 @@
     state.answers      = {};
     state.currentIndex = 0;
     state.userLevel    = null;
-    state.testMode     = 'full';
+    state.testSlug     = 'complet';
     elements.progressBar.style.width = '0%';
     elements.saveCta.classList.add('hidden');
     // Re-enable the start CTAs disabled by startTest() during the previous run.
@@ -376,19 +376,20 @@
 
   /**
    * Click handler shared by the two start CTAs. Loads the right question
-   * subset for the chosen mode, then routes to the level slider.
+   * subset for the chosen test, then routes to the level slider.
    *
    * Disables both buttons while the fetch is in flight so a double-click
    * doesn't trigger overlapping requests / inconsistent state.
    *
-   * @param {'quick'|'full'} mode Test depth picked by the user.
+   * @param {string} slug Test slug — 'rapide' (10q) or 'complet' (30q) by
+   *                      default, or any new slug coordinators add.
    */
-  function startTest(mode) {
-    state.testMode = mode;
+  function startTest(slug) {
+    state.testSlug = slug;
     elements.btnStartQuick.disabled = true;
     elements.btnStartFull.disabled  = true;
 
-    fetch('api/questions?mode=' + encodeURIComponent(mode))
+    fetch('api/questions?test=' + encodeURIComponent(slug))
       .then(function (response) {
         if (!response.ok) throw new Error('Impossible de charger les questions');
         return response.json();
@@ -443,8 +444,8 @@
         elements.title.textContent       = 'Test d\'orientation';
         elements.description.textContent = 'Choisissez la profondeur du test pour découvrir les formations CNAM qui vous correspondent.';
 
-        elements.btnStartQuick.addEventListener('click', function () { startTest('quick'); });
-        elements.btnStartFull.addEventListener('click',  function () { startTest('full');  });
+        elements.btnStartQuick.addEventListener('click', function () { startTest('rapide');  });
+        elements.btnStartFull.addEventListener('click',  function () { startTest('complet'); });
 
         elements.levelInput.addEventListener('input',  updateLevelDisplay);
         elements.levelInput.addEventListener('change', updateLevelDisplay);

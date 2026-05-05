@@ -32,9 +32,11 @@ require_once $base . '/Controllers/RecommendController.php';
 require_once $base . '/Controllers/AnswerController.php';
 require_once $base . '/Controllers/StatsController.php';
 require_once $base . '/Controllers/AdminController.php';
+require_once $base . '/Models/Test.php';
+require_once $base . '/Controllers/TestController.php';
 
 use App\Core\Response;
-use App\Controllers\{AuthController, QuestionController, RecommendController, AnswerController, StatsController, AdminController};
+use App\Controllers\{AuthController, QuestionController, RecommendController, AnswerController, StatsController, AdminController, TestController};
 
 // ── Router ────────────────────────────────────────────────────────────────
 // `_route` is the path rewritten by api/.htaccess (see RewriteRule there).
@@ -50,6 +52,8 @@ $route  = trim($_GET['_route'] ?? '', '/');
 $routeRoles = [
     'admin/questions'  => ['admin', 'coordinateur'],
     'admin/question'   => ['admin', 'coordinateur'],
+    'admin/tests'      => ['admin', 'coordinateur'],
+    'admin/test'       => ['admin', 'coordinateur'],
     'admin/formations' => ['admin'],
     'admin/export'     => ['admin'],
 ];
@@ -69,6 +73,8 @@ $csrfProtected = [
     ['POST', 'auth'], ['POST', 'answers'],
     ['POST', 'admin/questions'], ['PUT', 'admin/questions'], ['DELETE', 'admin/questions'],
     ['PUT', 'admin/question'],
+    ['POST', 'admin/tests'], ['DELETE', 'admin/tests'],
+    ['PUT', 'admin/test'],
     ['POST', 'admin/formations'], ['PUT', 'admin/formations'], ['DELETE', 'admin/formations'],
 ];
 if (in_array([$method, $route], $csrfProtected, true)) {
@@ -94,6 +100,7 @@ try {
         ['POST', 'auth']      => (new AuthController())->handle(),
         ['GET',  'questions']  => (new QuestionController())->index(),
         ['GET',  'formations'] => (new QuestionController())->formations(),
+        ['GET',  'tests']      => (new TestController())->listPublic(),
         ['POST', 'recommend']  => (new RecommendController())->recommend(),
         ['GET',  'answers']    => (new AnswerController())->last(),
         ['POST', 'answers']    => (new AnswerController())->store(),
@@ -105,6 +112,11 @@ try {
         ['DELETE', 'admin/questions']   => (new AdminController())->deleteQuestion(),
         ['GET',    'admin/question']    => (new AdminController())->getQuestion(),
         ['PUT',    'admin/question']    => (new AdminController())->saveQuestionFull(),
+        ['GET',    'admin/tests']       => (new TestController())->listAll(),
+        ['POST',   'admin/tests']       => (new TestController())->create(),
+        ['DELETE', 'admin/tests']       => (new TestController())->delete(),
+        ['GET',    'admin/test']        => (new TestController())->getOne(),
+        ['PUT',    'admin/test']        => (new TestController())->save(),
         ['GET',    'admin/formations']  => (new AdminController())->listFormations(),
         ['POST',   'admin/formations']  => (new AdminController())->createFormation(),
         ['PUT',    'admin/formations']  => (new AdminController())->updateFormation(),

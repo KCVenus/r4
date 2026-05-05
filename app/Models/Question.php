@@ -26,9 +26,12 @@ class Question
         $pdo = Database::getInstance();
 
         $questions = $pdo->query(
-            'SELECT id, question_key, text, sort_order, active, quick
-             FROM   questions
-             ORDER  BY sort_order, id'
+            'SELECT q.id, q.question_key, q.text, q.sort_order, q.active,
+                    COUNT(tq.test_id) AS test_count
+             FROM   questions      q
+             LEFT JOIN test_questions tq ON tq.question_id = q.id
+             GROUP  BY q.id
+             ORDER  BY q.sort_order, q.id'
         )->fetchAll();
 
         $optionsStmt = $pdo->prepare(
@@ -110,11 +113,13 @@ class Question
     }
 
     /**
-     * Fetch one question with its options AND the per-option formation scores.
+     * Fetch one question with its options, per-option formation scores AND
+     * the list of test ids it currently belongs to.
      *
      * Shape:
      *   {
-     *     id, question_key, text, sort_order, active, quick,
+     *     id, question_key, text, sort_order, active,
+     *     test_ids: [int, ...],
      *     options: [
      *       { id, value, label, sort_order, scores: { formation_id: points, ... } },
      *       ...
@@ -122,7 +127,8 @@ class Question
      *   }
      *
      * Used by the admin question editor modal: returns everything needed to
-     * render text + options + per-option formation weights in a single payload.
+     * render text + options + per-option formation weights + test memberships
+     * in a single payload.
      *
      * @param int $id Question primary key.
      * @return array|null  Question payload, or null if no row matches.
@@ -132,13 +138,17 @@ class Question
         $pdo = Database::getInstance();
 
         $stmt = $pdo->prepare(
-            'SELECT id, question_key, text, sort_order, active, quick
+            'SELECT id, question_key, text, sort_order, active
              FROM   questions
              WHERE  id = ?'
         );
         $stmt->execute([$id]);
         $question = $stmt->fetch();
         if (!$question) return null;
+
+        // Embed the test memberships so the editor can render the multi-test
+        // checkbox grid without an extra round-trip.
+        $question['test_ids'] = Test::getTestIdsForQuestion($id);
 
         $optionsStmt = $pdo->prepare(
             'SELECT id, value, label, sort_order
@@ -175,23 +185,25 @@ class Question
     }
 
     /**
-     * Atomically save a question, its options and the per-option formation scores.
+     * Atomically save a question, its options, the per-option formation
+     * scores and its test memberships.
      *
      * Strategy: wrap in a transaction.
-     *   1. UPDATE the question row (text/sort_order/active/quick).
+     *   1. UPDATE the question row (text/sort_order/active).
      *   2. Reconcile options: existing options with id are UPDATEd, new options
      *      (no id) are INSERTed, removed options are DELETEd. CASCADE removes
      *      orphaned formation_scores automatically when an option is deleted.
      *   3. For each option, replace its formation_scores: DELETE then bulk
-     *      INSERT only the rows with points > 0 (a row implicitly means
-     *      "this option contributes N points to that formation").
+     *      INSERT only the rows with points > 0.
+     *   4. Replace the test_questions memberships if `test_ids` is provided.
      *
      * The frontend sends the full state every time (no diff), so the server
      * just needs to bring the DB to match.
      *
      * @param int   $id   Question id.
      * @param array $data {
-     *   text: string, sort_order: int, active: bool, quick: bool,
+     *   text: string, sort_order: int, active: bool,
+     *   test_ids?: int[],
      *   options: [
      *     { id?: int, value: string, label: string, sort_order: int,
      *       scores: { formation_id: points, ... } }, ...
@@ -206,13 +218,12 @@ class Question
             // 1. Question row.
             $pdo->prepare(
                 'UPDATE questions
-                 SET    text = ?, sort_order = ?, active = ?, quick = ?
+                 SET    text = ?, sort_order = ?, active = ?
                  WHERE  id = ?'
             )->execute([
                 trim($data['text'] ?? ''),
                 (int) ($data['sort_order'] ?? 0),
                 !empty($data['active']) ? 1 : 0,
-                !empty($data['quick']) ? 1 : 0,
                 $id,
             ]);
 
@@ -275,6 +286,13 @@ class Question
                 )->execute($params);
             }
 
+            // 4. Test memberships — only when the payload sent the field, so
+            //    legacy callers that pre-date the multi-test refactor keep
+            //    working without wiping memberships by accident.
+            if (array_key_exists('test_ids', $data) && is_array($data['test_ids'])) {
+                Test::setMembershipsForQuestion($id, $data['test_ids']);
+            }
+
             $pdo->commit();
         } catch (\Throwable $e) {
             $pdo->rollBack();
@@ -283,29 +301,43 @@ class Question
     }
 
     /**
-     * Fetch only active questions + their options, shaped for the public frontend.
+     * Fetch active questions + their options, shaped for the public frontend.
      *
-     * The returned `id` is the question_key (string) rather than the numeric id —
-     * the frontend uses it as a map key for answers.
+     * The returned `id` is the question_key (string) rather than the numeric
+     * id — the frontend uses it as a map key for answers.
      *
-     * @param bool $quickOnly When true, restrict to questions flagged for the
-     *                        short test (10-question subset). Default false =
-     *                        the full 30-question catalogue.
+     * @param string|null $testSlug When set, restrict to questions belonging
+     *                              to that test (via test_questions pivot).
+     *                              When null, returns every active question
+     *                              ordered by `questions.sort_order` — used
+     *                              as a fallback when the slug is unknown.
      * @return array Array of {id, text, options[]} objects.
      */
-    public static function getActive(bool $quickOnly = false): array
+    public static function getActive(?string $testSlug = null): array
     {
         $pdo = Database::getInstance();
 
-        $where = 'active = 1';
-        if ($quickOnly) $where .= ' AND quick = 1';
-
-        $questions = $pdo->query(
-            "SELECT id, question_key, text
-             FROM   questions
-             WHERE  $where
-             ORDER  BY sort_order, id"
-        )->fetchAll();
+        if ($testSlug !== null) {
+            // Filter via the pivot. ORDER BY tq.sort_order so the per-test
+            // ordering wins over the question's own sort_order.
+            $stmt = $pdo->prepare(
+                'SELECT q.id, q.question_key, q.text
+                 FROM   questions      q
+                 JOIN   test_questions tq ON tq.question_id = q.id
+                 JOIN   tests          t  ON t.id          = tq.test_id
+                 WHERE  q.active = 1 AND t.active = 1 AND t.slug = ?
+                 ORDER  BY tq.sort_order, q.id'
+            );
+            $stmt->execute([$testSlug]);
+            $questions = $stmt->fetchAll();
+        } else {
+            $questions = $pdo->query(
+                'SELECT id, question_key, text
+                 FROM   questions
+                 WHERE  active = 1
+                 ORDER  BY sort_order, id'
+            )->fetchAll();
+        }
 
         $optionsStmt = $pdo->prepare(
             'SELECT value, label
