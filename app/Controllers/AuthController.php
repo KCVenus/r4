@@ -81,7 +81,8 @@ class AuthController
         // leaking which usernames exist.
         if (!$user || !password_verify($password, $user['password_hash'])) {
             $rateLimit['count']++;
-            if ($rateLimit['count'] >= 5) {
+            // After 5 failed attempts, lock out for 5 minutes and reset the counter. (was 10 before but reduced to 5 for better security)
+            if ($rateLimit['count'] >= 5) {   
                 // Lock out for 5 minutes, then reset the counter.
                 $rateLimit['until'] = time() + 300;
                 $rateLimit['count'] = 0;
