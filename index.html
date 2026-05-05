@@ -3,12 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#b21e35" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#1e293b"  media="(prefers-color-scheme: dark)" />
   <title>Test d'orientation</title>
+  <!-- Inline early-apply: avoid a flash of the wrong theme by setting
+       data-theme on <html> before stylesheet parsing. theme.js handles
+       the rest (button wiring) once the DOM is ready. -->
+  <script>(function(){try{var t=localStorage.getItem('r4-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}})();</script>
   <!-- Versioned query string busts the Cloudflare CDN cache when assets
        change ; bump the timestamp on every release that ships JS or CSS. -->
-  <link rel="stylesheet" href="style.css?v=20260504085235" />
+  <link rel="stylesheet" href="style.css?v=20260505141043" />
+  <script defer src="theme.js?v=20260505141043"></script>
 </head>
 <body>
 
@@ -19,9 +24,11 @@
         <span id="username-display"></span>
         <a id="account-link" href="account.html" class="link-btn">Mon compte</a>
         <a id="admin-link" href="admin.html" class="link-btn hidden">Admin</a>
+        <button class="theme-toggle" data-theme-toggle type="button">🌗</button>
         <button id="btn-logout" class="link-btn">Déconnexion</button>
       </div>
       <div id="guest-info" class="user-info hidden">
+        <button class="theme-toggle" data-theme-toggle type="button">🌗</button>
         <a href="login.html" class="link-btn">Connexion</a>
       </div>
     </div>

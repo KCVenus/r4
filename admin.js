@@ -212,6 +212,9 @@
   // Cache the formations list once per tab load — needed by the editor modal
   // to render the per-option scoring grid. Refreshed on every loadQuestions().
   var formationsCache = [];
+  // Captured by renderQuestions so both modals can clamp the sort_order input
+  // without re-fetching. Mirrors the server-side bound in AdminController.
+  var lastQuestionsCount = 0;
 
   /**
    * Load both the questions list and the formations catalogue in parallel,
@@ -238,6 +241,8 @@
    * @param {object} data Payload with a `questions` array.
    */
   function renderQuestions(data) {
+    lastQuestionsCount = data.questions.length;
+
     var html = '<section class="admin-section">';
     html += '<div class="admin-section-header">';
     html += '<h2 class="admin-section-title">Questions <span class="muted">(' + data.questions.length + ')</span></h2>';
@@ -325,7 +330,7 @@
       .then(function (data) {
         renderQuestionEditorModal(data.question);
       })
-      .catch(function () { alert('Erreur lors du chargement de la question.'); });
+      .catch(function () { showError('Erreur lors du chargement de la question.'); });
   }
 
   /**
@@ -334,25 +339,36 @@
    */
   function openCreateQuestionModal() {
     var modal = createModalShell('Nouvelle question');
+    // New row appends after the last → legal range is [1, count + 1].
+    var maxPos = lastQuestionsCount + 1;
+
     modal.body.innerHTML =
       '<div class="field"><label>Identifiant court (ex : q11, q24q)</label>' +
       '<input id="nq-key" type="text" placeholder="ex : q11" autocomplete="off"></div>' +
       '<div class="field"><label>Énoncé de la question</label>' +
       '<textarea id="nq-text" rows="3" placeholder="ex : Je préfère travailler en équipe."></textarea></div>' +
-      '<div class="field"><label>Ordre d\'affichage</label>' +
-      '<input id="nq-sort" type="number" value="0"></div>';
+      '<div class="field"><label>Ordre d\'affichage (1 à ' + maxPos + ')</label>' +
+      '<input id="nq-sort" type="number" min="1" max="' + maxPos + '" step="1" value="' + maxPos + '"></div>';
 
     modal.footer.innerHTML =
       '<button class="btn-secondary" data-modal-close>Annuler</button>' +
       '<button class="btn-primary" id="nq-create">Créer puis configurer</button>';
     wireModalClose(modal);
 
+    // Clamp on every keystroke so the user cannot leave the input on a
+    // negative or out-of-range value. Mirrors the server-side bound.
+    clampPositionInput(modal.body.querySelector('#nq-sort'), maxPos);
+
     modal.body.querySelector('#nq-key').focus();
     modal.footer.querySelector('#nq-create').addEventListener('click', function () {
       var key  = modal.body.querySelector('#nq-key').value.trim();
       var text = modal.body.querySelector('#nq-text').value.trim();
-      var sort = parseInt(modal.body.querySelector('#nq-sort').value) || 0;
-      if (!key || !text) { alert('Identifiant et énoncé requis.'); return; }
+      var sort = parseInt(modal.body.querySelector('#nq-sort').value, 10);
+      if (!key || !text) { showError('Identifiant et énoncé requis.'); return; }
+      if (isNaN(sort) || sort < 1 || sort > maxPos) {
+        showError('Position invalide (entre 1 et ' + maxPos + ').');
+        return;
+      }
       apiCall('POST', 'api/admin/questions', { question_key: key, text: text, sort_order: sort }, function (resp) {
         closeModal(modal);
         // Re-open the freshly-created row in the full editor so the admin
@@ -373,6 +389,8 @@
    */
   function renderQuestionEditorModal(q) {
     var modal = createModalShell('Modifier la question — ' + q.question_key, 'modal-wide');
+    // Question already exists, so the upper bound is the current count.
+    var maxPos = Math.max(1, lastQuestionsCount);
 
     // Internal state mutated by the option/score editors below.
     // Cloned from q.options so we can edit freely without touching the source.
@@ -412,7 +430,8 @@
       html += '<div class="field"><label>Énoncé de la question</label>' +
               '<textarea id="ed-text" rows="3">' + escapeHtml(state.text) + '</textarea></div>';
       html += '<div class="field-row">';
-      html += '<div class="field"><label>Ordre</label><input id="ed-sort" type="number" value="' + state.sort_order + '"></div>';
+      html += '<div class="field"><label>Ordre (1 à ' + maxPos + ')</label>' +
+              '<input id="ed-sort" type="number" min="1" max="' + maxPos + '" step="1" value="' + state.sort_order + '"></div>';
       html += '<div class="field-checks">';
       html += '<label class="check"><input id="ed-active" type="checkbox"' + (state.active ? ' checked' : '') + '> Active</label>';
       html += '<label class="check"><input id="ed-quick" type="checkbox"' + (state.quick ? ' checked' : '') + '> Test rapide (10 questions)</label>';
@@ -493,7 +512,10 @@
      */
     function bindEditorEvents() {
       modal.body.querySelector('#ed-text').addEventListener('input', function (e) { state.text = e.target.value; });
-      modal.body.querySelector('#ed-sort').addEventListener('input', function (e) { state.sort_order = parseInt(e.target.value) || 0; });
+      // Clamp to the [1, maxPos] range and reflect the clamped value into
+      // both the input and the tracked state. Prevents negatives outright.
+      var sortInput = modal.body.querySelector('#ed-sort');
+      clampPositionInput(sortInput, maxPos, function (clamped) { state.sort_order = clamped; });
       modal.body.querySelector('#ed-active').addEventListener('change', function (e) { state.active = e.target.checked; });
       modal.body.querySelector('#ed-quick').addEventListener('change', function (e) { state.quick = e.target.checked; });
 
@@ -554,10 +576,14 @@
       '<button class="btn-primary" id="ed-save">Enregistrer</button>';
     modal.footer.querySelector('#ed-save').addEventListener('click', function () {
       // Final guards mirroring the server checks.
-      if (!state.text.trim())                 { alert('Un énoncé est requis.'); return; }
-      if (state.options.length < 2)           { alert('Au moins 2 réponses sont requises.'); return; }
+      if (!state.text.trim())       { showError('Un énoncé est requis.'); return; }
+      if (state.options.length < 2) { showError('Au moins 2 réponses sont requises.'); return; }
       var bad = state.options.some(function (o) { return !o.value.trim() || !o.label.trim(); });
-      if (bad) { alert('Chaque réponse doit avoir un code et un libellé.'); return; }
+      if (bad) { showError('Chaque réponse doit avoir un code et un libellé.'); return; }
+      if (isNaN(state.sort_order) || state.sort_order < 1 || state.sort_order > maxPos) {
+        showError('Position invalide (entre 1 et ' + maxPos + ').');
+        return;
+      }
 
       apiCall('PUT', 'api/admin/question?id=' + q.id, state, function () {
         closeModal(modal);
@@ -682,7 +708,7 @@
       var desc  = document.getElementById('ff-desc').value.trim() || null;
       var email = document.getElementById('ff-email').value.trim() || null;
       var url   = document.getElementById('ff-url').value.trim() || null;
-      if (!name) { alert('Le nom est requis.'); return; }
+      if (!name) { showError('Le nom est requis.'); return; }
 
       if (isNew) {
         apiCall('POST', 'api/admin/formations', { name: name, description: desc, contact_email: email, contact_url: url }, function () { loadFormations(); });
@@ -719,6 +745,83 @@
       '</section>';
   }
 
+  /**
+   * Bind a number input so its value can never leave the [1, maxPos] range.
+   * On every `input` event the value is reparsed and clamped — typing "-5"
+   * snaps to 1, typing "999" snaps to maxPos. The optional `onChange`
+   * callback receives the clamped integer (used by the editor modal to
+   * keep its `state.sort_order` mirror in sync).
+   *
+   * @param {HTMLInputElement} input
+   * @param {number}           maxPos
+   * @param {(v:number) => void} [onChange]
+   */
+  function clampPositionInput(input, maxPos, onChange) {
+    function clamp() {
+      var raw = parseInt(input.value, 10);
+      if (isNaN(raw) || raw < 1) {
+        input.value = '1';
+        if (onChange) onChange(1);
+      } else if (raw > maxPos) {
+        input.value = String(maxPos);
+        if (onChange) onChange(maxPos);
+      } else if (onChange) {
+        onChange(raw);
+      }
+    }
+    input.addEventListener('input', clamp);
+    // Also fire on blur in case the user leaves an invalid value mid-edit
+    // (the browser fires `change` only after blur for type=number).
+    input.addEventListener('change', clamp);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // TOASTS
+  // ═══════════════════════════════════════════════════════════
+
+  /**
+   * Lazily create the toast container on first use. Kept out of admin.html
+   * so the markup is owned by the script that pushes notifications into it.
+   *
+   * @returns {HTMLElement} The container `<div>`.
+   */
+  function getToastContainer() {
+    var container = document.getElementById('admin-toast');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'admin-toast';
+      document.body.appendChild(container);
+    }
+    return container;
+  }
+
+  /**
+   * Push a transient toast and auto-dismiss after `timeoutMs` (default 5s).
+   *
+   * @param {string}                       message Text to display.
+   * @param {'error'|'warn'|'success'}     kind    Visual variant.
+   * @param {number}                       [timeoutMs] Auto-dismiss delay.
+   */
+  function showToast(message, kind, timeoutMs) {
+    var container = getToastContainer();
+    var node = document.createElement('div');
+    node.className = 'toast toast-' + kind;
+    node.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    node.textContent = message;
+    container.appendChild(node);
+
+    // Slide-in next frame so the CSS transition runs from the initial state.
+    requestAnimationFrame(function () { node.classList.add('toast-visible'); });
+
+    var delay = timeoutMs || 5000;
+    setTimeout(function () {
+      node.classList.remove('toast-visible');
+      setTimeout(function () { node.remove(); }, 300);
+    }, delay);
+  }
+
+  function showError(message) { showToast(message, 'error'); }
+
   // ═══════════════════════════════════════════════════════════
   // UTILITIES
   // ═══════════════════════════════════════════════════════════
@@ -741,16 +844,32 @@
     if (body !== null) options.body = JSON.stringify(body);
 
     fetch(url, options)
-      // Always read the body as JSON so we can surface the server's error message.
-      .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+      // Always try to read the body as JSON so we can surface the server's
+      // error message; tolerate non-JSON 5xx responses (returns null payload).
+      .then(function (response) {
+        return response.json()
+          .catch(function () { return {}; })
+          .then(function (data) { return { ok: response.ok, status: response.status, data: data }; });
+      })
       .then(function (result) {
         if (result.ok) {
-          onSuccess();
+          onSuccess(result.data);
+          return;
+        }
+        // Split feedback so the admin knows what went wrong:
+        //   - 5xx → DB / server outage
+        //   - 422 → validation (server's message is meaningful)
+        //   - other 4xx → server's message or generic fallback
+        var serverMsg = result.data && result.data.error;
+        if (result.status >= 500) {
+          showError('Erreur base de données, réessayez dans un instant.');
+        } else if (result.status === 422) {
+          showError(serverMsg || 'Données invalides.');
         } else {
-          alert('Erreur : ' + (result.data.error || 'Inconnue'));
+          showError(serverMsg || 'Erreur inconnue (' + result.status + ').');
         }
       })
-      .catch(function () { alert('Erreur réseau.'); });
+      .catch(function () { showError('Connexion réseau perdue, vérifiez votre connexion.'); });
   }
 
   /**
