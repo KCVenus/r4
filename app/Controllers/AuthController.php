@@ -134,6 +134,13 @@ class AuthController
             Response::error('Adresse email invalide');
         }
 
+        // GDPR: explicit consent to the privacy policy is mandatory at signup.
+        // The frontend ships a checkbox but a hostile client could still POST
+        // without it — reject with 422 so the client surfaces a clear error.
+        if (empty($body['consent'])) {
+            Response::error('Vous devez accepter la politique de confidentialité', 422);
+        }
+
         try {
             $userId = User::create($username, password_hash($password, PASSWORD_DEFAULT), $email);
         } catch (\PDOException $e) {
@@ -161,5 +168,49 @@ class AuthController
     {
         session_destroy();
         Response::json(['ok' => true]);
+    }
+
+    /**
+     * DELETE /me — GDPR right to erasure.
+     *
+     * Hard-deletes the user row; survey responses + answers cascade away
+     * via the ON DELETE CASCADE FK. Tests created by the user keep
+     * existing (created_by FK SET NULL) so a coordinator's work isn't
+     * destroyed with their account.
+     *
+     * Session is destroyed afterwards so the client can redirect to login.
+     */
+    public function deleteMe(): void
+    {
+        if (!isset($_SESSION['user_id'])) {
+            Response::error('Non authentifié', 401);
+        }
+
+        User::deleteById((int) $_SESSION['user_id']);
+        session_destroy();
+        Response::json(['ok' => true]);
+    }
+
+    /**
+     * GET /me/export — GDPR right to data portability.
+     *
+     * Returns a JSON file containing every personal record we hold for
+     * the user: account row + survey runs + per-run answers. The browser
+     * triggers a download via Content-Disposition: attachment.
+     */
+    public function exportMe(): void
+    {
+        if (!isset($_SESSION['user_id'])) {
+            Response::error('Non authentifié', 401);
+        }
+
+        $payload = User::exportPersonalData((int) $_SESSION['user_id']);
+
+        // Override the JSON header set in api/index.php with a download
+        // header so the browser saves the file rather than showing it.
+        header('Content-Type: application/json; charset=utf-8', true);
+        header('Content-Disposition: attachment; filename="r4-export-' . date('Ymd_His') . '.json"');
+        echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        exit;
     }
 }

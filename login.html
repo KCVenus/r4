@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#1e293b"  media="(prefers-color-scheme: dark)" />
   <title>Connexion</title>
   <script>(function(){try{var t=localStorage.getItem('r4-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}})();</script>
-  <link rel="stylesheet" href="style.css?v=20260505142850" />
-  <script defer src="theme.js?v=20260505142850"></script>
+  <link rel="stylesheet" href="style.css?v=20260505143837" />
+  <script defer src="theme.js?v=20260505143837"></script>
 </head>
 <body class="auth-body">
 
@@ -64,6 +64,14 @@
         />
       </div>
 
+      <!-- Consent checkbox is only shown in register mode, toggled by setMode(). -->
+      <div class="field consent-field" id="consent-field" style="display:none">
+        <label class="check">
+          <input id="consent" name="consent" type="checkbox" />
+          J'accepte la <a href="privacy.html" target="_blank" rel="noopener">politique de confidentialité</a>.
+        </label>
+      </div>
+
       <button type="submit" id="auth-submit" class="btn-primary auth-btn">
         Se connecter
       </button>
@@ -79,6 +87,12 @@
       <a href="index.html" class="link-btn">← Continuer sans compte</a>
     </p>
   </main>
+
+  <footer class="app-footer">
+    <a href="privacy.html">Confidentialité</a>
+    <span class="footer-sep">·</span>
+    <a href="legal.html">Mentions légales</a>
+  </footer>
 
   <script>
     /**
@@ -130,7 +144,9 @@
         toggleBtn.textContent  = login ? 'En créer un' : 'Se connecter';
         // Tell password managers whether this is an existing or new password field.
         passInput.setAttribute('autocomplete', login ? 'current-password' : 'new-password');
-        document.getElementById('email-field').style.display = login ? 'none' : '';
+        document.getElementById('email-field').style.display   = login ? 'none' : '';
+        // Consent checkbox: only required at registration. Hidden in login mode.
+        document.getElementById('consent-field').style.display = login ? 'none' : '';
         hideError();
       }
 
@@ -155,7 +171,15 @@
         var password = document.getElementById('password').value;
         // Empty email -> null so the backend stores a real NULL rather than ''.
         var email    = document.getElementById('email').value.trim() || null;
+        var consent  = document.getElementById('consent').checked;
         var action   = isLoginMode ? 'login' : 'register';
+
+        // Block submission early when registering without consent — saves a
+        // round-trip and gives a clearer message than the server's 422.
+        if (!isLoginMode && !consent) {
+          showError('Vous devez accepter la politique de confidentialité pour créer un compte.');
+          return;
+        }
 
         // Disable the submit button to prevent double-submission races.
         submitEl.disabled    = true;
@@ -165,7 +189,13 @@
           method:      'POST',
           credentials: 'include',
           headers:     { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-          body:        JSON.stringify({ action: action, username: username, password: password, email: email }),
+          body:        JSON.stringify({
+            action:   action,
+            username: username,
+            password: password,
+            email:    email,
+            consent:  consent,
+          }),
         })
           // Merge the status and body into one object so we can branch on either.
           .then(function (response) {

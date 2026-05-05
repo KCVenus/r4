@@ -71,6 +71,7 @@ if (isset($routeRoles[$route])) {
 // the token the client received from GET /csrf. hash_equals is timing-safe.
 $csrfProtected = [
     ['POST', 'auth'], ['POST', 'answers'],
+    ['DELETE', 'me'],
     ['POST', 'admin/questions'], ['PUT', 'admin/questions'], ['DELETE', 'admin/questions'],
     ['PUT', 'admin/question'],
     ['POST', 'admin/tests'], ['DELETE', 'admin/tests'],
@@ -105,6 +106,8 @@ try {
         ['GET',  'answers']    => (new AnswerController())->last(),
         ['POST', 'answers']    => (new AnswerController())->store(),
         ['GET',  'me/tests']   => (new AnswerController())->listMine(),
+        ['GET',    'me/export'] => (new AuthController())->exportMe(),
+        ['DELETE', 'me']        => (new AuthController())->deleteMe(),
         ['GET',  'stats']               => (new StatsController())->index(),
         ['GET',    'admin/questions']   => (new AdminController())->listQuestions(),
         ['POST',   'admin/questions']   => (new AdminController())->createQuestion(),

@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `password_hash` VARCHAR(255)    NOT NULL,
   `role`          ENUM('user','admin','coordinateur') NOT NULL DEFAULT 'user',
   `created_at`    TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `consent_at`    TIMESTAMP       NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_username` (`username`),
   UNIQUE KEY `uq_email` (`email`)

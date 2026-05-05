@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#1e293b"  media="(prefers-color-scheme: dark)" />
   <title>Mon compte</title>
   <script>(function(){try{var t=localStorage.getItem('r4-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}})();</script>
-  <link rel="stylesheet" href="style.css?v=20260505142850" />
-  <script defer src="theme.js?v=20260505142850"></script>
+  <link rel="stylesheet" href="style.css?v=20260505143837" />
+  <script defer src="theme.js?v=20260505143837"></script>
 </head>
 <body>
 
@@ -49,8 +49,27 @@
       <div id="catalog-list"></div>
     </section>
 
+    <!-- GDPR self-service: download personal data + delete account.
+         Buttons are wired in account.js. -->
+    <section class="gdpr-section">
+      <h2 class="account-section-title">Mes données</h2>
+      <p class="account-section-desc">
+        Conformément au RGPD, vous pouvez à tout moment télécharger l'intégralité de vos données ou supprimer votre compte. La <a href="privacy.html">politique de confidentialité</a> détaille ce que nous collectons.
+      </p>
+      <div class="gdpr-actions">
+        <a id="btn-export-data" href="api/me/export" class="btn-secondary" download>⬇ Télécharger mes données (JSON)</a>
+        <button id="btn-delete-account" class="btn-danger" type="button">Supprimer mon compte</button>
+      </div>
+    </section>
+
   </main>
 
-  <script src="account.js?v=20260505142850"></script>
+  <footer class="app-footer">
+    <a href="privacy.html">Confidentialité</a>
+    <span class="footer-sep">·</span>
+    <a href="legal.html">Mentions légales</a>
+  </footer>
+
+  <script src="account.js?v=20260505143837"></script>
 </body>
 </html>
