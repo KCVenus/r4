@@ -1,13 +1,16 @@
 /* ── Design tokens ───────────────────────────────────────────────────────── */
 :root {
-  --color-bg:         #f5f7ff;
-  --color-surface:    #ffffff;
-  --color-primary:    #2563eb;
-  --color-primary-dk: #1d4ed8;
-  --color-text:       #1e293b;
-  --color-text-muted: #64748b;
-  --color-border:     #e2e8f0;
-  --color-success:    #16a34a;
+  --color-bg:           #fff7f8;
+  --color-surface:      #ffffff;
+  --color-primary:      #b21e35;
+  --color-primary-dk:   #8c1b31;
+  --color-primary-deep: #6e1626;
+  --color-primary-soft: #fdecef;
+  --color-primary-glow: rgba(178, 30, 53, 0.35);
+  --color-text:         #1e293b;
+  --color-text-muted:   #64748b;
+  --color-border:       #e2e8f0;
+  --color-success:      #16a34a;
 
   --space-xs:  0.25rem;
   --space-sm:  0.5rem;
@@ -29,14 +32,17 @@
 /* ── Dark mode ───────────────────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg:         #0f172a;
-    --color-surface:    #1e293b;
-    --color-primary:    #60a5fa;
-    --color-primary-dk: #3b82f6;
-    --color-text:       #f1f5f9;
-    --color-text-muted: #94a3b8;
-    --color-border:     #334155;
-    --color-success:    #4ade80;
+    --color-bg:           #0f172a;
+    --color-surface:      #1e293b;
+    --color-primary:      #d4243f;
+    --color-primary-dk:   #b21e35;
+    --color-primary-deep: #8c1b31;
+    --color-primary-soft: #3a0f17;
+    --color-primary-glow: rgba(212, 36, 63, 0.4);
+    --color-text:         #f1f5f9;
+    --color-text-muted:   #94a3b8;
+    --color-border:       #334155;
+    --color-success:      #4ade80;
   }
 }
 
@@ -66,8 +72,9 @@ body {
 /* ── Header ──────────────────────────────────────────────────────────────── */
 #app-header {
   background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--space-md) var(--space-lg);
+  /* Soft shadow instead of a hard border-bottom — modern web-app feel. */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: var(--space-sm) var(--space-lg);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -186,7 +193,7 @@ section[id^="view-"].active {
 }
 
 .option-btn:focus-visible {
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 0 0 3px rgba(178, 30, 53, 0.35);
 }
 
 .option-btn:active {
@@ -274,14 +281,14 @@ section[id^="view-"].active {
 .btn-back:hover,
 .btn-back:focus-visible {
   color: var(--color-primary);
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(178, 30, 53, 0.08);
   outline: none;
 }
 
 @media (prefers-color-scheme: dark) {
   .btn-back:hover,
   .btn-back:focus-visible {
-    background: rgba(96, 165, 250, 0.12);
+    background: rgba(212, 36, 63, 0.12);
   }
 }
 
@@ -517,14 +524,15 @@ section[id^="view-"].active {
 
 /* ── Admin page ──────────────────────────────────────────────────────────── */
 .admin-body {
-  background: #e8edf8;
+  background: var(--color-bg);
   min-height: 100vh;
 }
 
 .admin-header {
   background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--space-md) var(--space-lg);
+  /* Soft shadow instead of a hard border-bottom — matches the public header. */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: var(--space-sm) var(--space-lg);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -719,7 +727,7 @@ section[id^="view-"].active {
 }
 
 .role-admin {
-  background: #eff6ff;
+  background: var(--color-primary-soft);
   color: var(--color-primary);
 }
 
@@ -731,7 +739,7 @@ section[id^="view-"].active {
 .answer-chip {
   display: inline-block;
   padding: 2px 8px;
-  background: #eff6ff;
+  background: var(--color-primary-soft);
   color: var(--color-primary);
   border-radius: 999px;
   font-size: 0.8125rem;
@@ -849,7 +857,7 @@ section[id^="view-"].active {
 
 @media (min-width: 960px) {
   body {
-    background: #e8edf8;
+    background: var(--color-bg);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -951,7 +959,7 @@ section[id^="view-"].active {
   font-weight: 700;
   color: var(--color-primary);
   font-family: monospace;
-  background: #eff6ff;
+  background: var(--color-primary-soft);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -1019,7 +1027,7 @@ section[id^="view-"].active {
 }
 
 @media (prefers-color-scheme: dark) {
-  .crud-item-key { background: #1e3a5f; }
+  .crud-item-key { background: var(--color-primary-soft); }
   .user-table th { background: #1e293b; }
   .badge-active   { background: #14532d; color: #86efac; }
   .badge-inactive { background: #450a0a; color: #fca5a5; }
@@ -1142,7 +1150,7 @@ section[id^="view-"].active {
   border-radius: 50%;
   border: 0;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 2px 8px rgba(178, 30, 53, 0.35);
 }
 /* Firefox track + thumb */
 .level-slider input[type="range"]::-moz-range-track {
@@ -1647,8 +1655,8 @@ body.modal-open { overflow: hidden; }
 .formation-row:hover { background: var(--color-bg); }
 
 .formation-row.is-on {
-  background: rgba(37, 99, 235, 0.06);
-  border-color: rgba(37, 99, 235, 0.25);
+  background: rgba(178, 30, 53, 0.06);
+  border-color: rgba(178, 30, 53, 0.25);
 }
 
 .formation-toggle {
