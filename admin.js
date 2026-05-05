@@ -225,6 +225,10 @@
    * @param {object} data Payload with a `questions` array.
    */
   function renderQuestions(data) {
+    // Captured in the click handlers below so the form can clamp the
+    // `sort_order` input to a valid range without re-fetching.
+    var totalCount = data.questions.length;
+
     var html = '<section class="admin-section">';
     html += '<div class="admin-section-header">';
     html += '<h2 class="admin-section-title">Questions (' + data.questions.length + ')</h2>';
@@ -255,7 +259,7 @@
     contentRoot.innerHTML = html;
 
     document.getElementById('btn-add-question').addEventListener('click', function () {
-      showQuestionForm(null);
+      showQuestionForm(null, totalCount);
     });
     document.querySelectorAll('.btn-edit-question').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -264,7 +268,7 @@
           text:       btn.dataset.text,
           sort_order: parseInt(btn.dataset.sort),
           active:     btn.dataset.active === '1',
-        });
+        }, totalCount);
       });
     });
     document.querySelectorAll('.btn-delete-question').forEach(function (btn) {
@@ -278,19 +282,26 @@
   /**
    * Render the inline "create / edit question" form.
    *
-   * @param {object|null} question Existing question for edit mode, null for create.
+   * @param {object|null} question   Existing question for edit mode, null for create.
+   * @param {number}      totalCount Current row count, used to clamp the position input.
    */
-  function showQuestionForm(question) {
+  function showQuestionForm(question, totalCount) {
     var area = document.getElementById('question-form-area');
     if (!area) return;
     var isNew = !question;
+    // On create the new row appends after the last one, so the legal range is
+    // [1, count+1]. On edit the row is already in `count`, so [1, count].
+    var maxPos     = isNew ? (totalCount + 1) : Math.max(1, totalCount);
+    var defaultPos = isNew ? maxPos : question.sort_order;
+
     area.innerHTML =
       '<div class="crud-form">' +
       '<h3>' + (isNew ? 'Nouvelle question' : 'Modifier la question') + '</h3>' +
       // question_key is only editable at creation — it's referenced elsewhere.
       (isNew ? '<div class="field"><label>Clé (ex: q11)</label><input id="qf-key" type="text" value=""></div>' : '') +
       '<div class="field"><label>Texte</label><input id="qf-text" type="text" value="' + (question ? escapeHtml(question.text) : '') + '"></div>' +
-      '<div class="field"><label>Ordre</label><input id="qf-sort" type="number" value="' + (question ? question.sort_order : 0) + '"></div>' +
+      '<div class="field"><label>Ordre (1 à ' + maxPos + ')</label>' +
+        '<input id="qf-sort" type="number" min="1" max="' + maxPos + '" step="1" value="' + defaultPos + '"></div>' +
       (!isNew ? '<div class="field"><label><input id="qf-active" type="checkbox"' + (question.active ? ' checked' : '') + '> Active</label></div>' : '') +
       '<div class="crud-form-actions">' +
       '<button class="btn-primary btn-sm" id="qf-submit">' + (isNew ? 'Créer' : 'Enregistrer') + '</button>' +
@@ -303,12 +314,17 @@
 
     document.getElementById('qf-submit').addEventListener('click', function () {
       var text = document.getElementById('qf-text').value.trim();
-      var sort = parseInt(document.getElementById('qf-sort').value) || 0;
-      if (!text) { alert('Le texte est requis.'); return; }
+      var sortRaw = document.getElementById('qf-sort').value;
+      var sort    = parseInt(sortRaw, 10);
+      if (!text) { showError('Le texte est requis.'); return; }
+      if (isNaN(sort) || sort < 1 || sort > maxPos) {
+        showError('Position invalide (entre 1 et ' + maxPos + ').');
+        return;
+      }
 
       if (isNew) {
         var key = document.getElementById('qf-key').value.trim();
-        if (!key) { alert('La clé est requise.'); return; }
+        if (!key) { showError('La clé est requise.'); return; }
         apiCall('POST', 'api/admin/questions', { question_key: key, text: text, sort_order: sort }, function () { loadQuestions(); });
       } else {
         var active = document.getElementById('qf-active').checked;
@@ -433,7 +449,7 @@
       var desc  = document.getElementById('ff-desc').value.trim() || null;
       var email = document.getElementById('ff-email').value.trim() || null;
       var url   = document.getElementById('ff-url').value.trim() || null;
-      if (!name) { alert('Le nom est requis.'); return; }
+      if (!name) { showError('Le nom est requis.'); return; }
 
       if (isNew) {
         apiCall('POST', 'api/admin/formations', { name: name, description: desc, contact_email: email, contact_url: url }, function () { loadFormations(); });
@@ -452,6 +468,55 @@
   function deleteFormation(id) {
     apiCall('DELETE', 'api/admin/formations?id=' + id, null, function () { loadFormations(); });
   }
+
+  // ═══════════════════════════════════════════════════════════
+  // TOASTS
+  // ═══════════════════════════════════════════════════════════
+
+  /**
+   * Lazily create the toast container on first use. Kept out of admin.html
+   * so the markup is owned by the script that pushes notifications into it.
+   *
+   * @returns {HTMLElement} The container `<div>`.
+   */
+  function getToastContainer() {
+    var container = document.getElementById('admin-toast');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'admin-toast';
+      document.body.appendChild(container);
+    }
+    return container;
+  }
+
+  /**
+   * Push a transient toast and auto-dismiss after `timeoutMs` (default 5s).
+   *
+   * @param {string}                       message Text to display (escaped).
+   * @param {'error'|'warn'|'success'}     kind    Visual variant.
+   * @param {number}                       [timeoutMs] Auto-dismiss delay.
+   */
+  function showToast(message, kind, timeoutMs) {
+    var container = getToastContainer();
+    var node = document.createElement('div');
+    node.className = 'toast toast-' + kind;
+    node.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    node.textContent = message;
+    container.appendChild(node);
+
+    // Slide-in next frame so the CSS transition runs from the initial state.
+    requestAnimationFrame(function () { node.classList.add('toast-visible'); });
+
+    var delay = timeoutMs || 5000;
+    setTimeout(function () {
+      node.classList.remove('toast-visible');
+      setTimeout(function () { node.remove(); }, 300);
+    }, delay);
+  }
+
+  function showError(message)   { showToast(message, 'error'); }
+  function showWarn(message)    { showToast(message, 'warn'); }
+  function showSuccess(message) { showToast(message, 'success', 3000); }
 
   // ═══════════════════════════════════════════════════════════
   // EXPORT TAB
@@ -478,6 +543,12 @@
    * Tiny wrapper around fetch for admin CRUD calls.
    * Always includes credentials + CSRF token and parses JSON.
    *
+   * Error UX is split across three buckets so the toast message tells the
+   * admin what went wrong:
+   *   - 422 (validation)         → server's `error` text, surfaced as-is
+   *   - 5xx (DB / server)        → "Erreur base de données…"
+   *   - 4xx other / fetch reject → server's `error` text or "Connexion réseau perdue"
+   *
    * @param {string}   method    HTTP verb.
    * @param {string}   url       Endpoint URL.
    * @param {object?}  body      JSON body, or null for DELETE calls.
@@ -492,16 +563,28 @@
     if (body !== null) options.body = JSON.stringify(body);
 
     fetch(url, options)
-      // Always read the body as JSON so we can surface the server's error message.
-      .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+      // Always try to read the body as JSON so we can surface the server's
+      // error message; tolerate non-JSON 5xx responses (returns null payload).
+      .then(function (response) {
+        return response.json()
+          .catch(function () { return {}; })
+          .then(function (data) { return { ok: response.ok, status: response.status, data: data }; });
+      })
       .then(function (result) {
         if (result.ok) {
-          onSuccess();
+          onSuccess(result.data);
+          return;
+        }
+        var serverMsg = result.data && result.data.error;
+        if (result.status >= 500) {
+          showError('Erreur base de données, réessayez dans un instant.');
+        } else if (result.status === 422) {
+          showError(serverMsg || 'Données invalides.');
         } else {
-          alert('Erreur : ' + (result.data.error || 'Inconnue'));
+          showError(serverMsg || 'Erreur inconnue (' + result.status + ').');
         }
       })
-      .catch(function () { alert('Erreur réseau.'); });
+      .catch(function () { showError('Connexion réseau perdue, vérifiez votre connexion.'); });
   }
 
   /**

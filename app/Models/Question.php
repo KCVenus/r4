@@ -48,6 +48,22 @@ class Question
     }
 
     /**
+     * Total number of questions (active + inactive).
+     *
+     * Used to compute the valid upper bound for `sort_order` when admins
+     * create or move a question — accepting positions beyond `count + 1`
+     * leaves gaps that confuse the ordered listing.
+     *
+     * @return int Row count of the `questions` table.
+     */
+    public static function count(): int
+    {
+        return (int) Database::getInstance()
+            ->query('SELECT COUNT(*) FROM questions')
+            ->fetchColumn();
+    }
+
+    /**
      * Insert a new question. Options are created separately via a dedicated endpoint.
      *
      * @param string $key       Short machine id (e.g. "q11").

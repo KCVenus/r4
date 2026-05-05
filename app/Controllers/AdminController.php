@@ -40,6 +40,13 @@ class AdminController
             Response::error('question_key et text sont requis');
         }
 
+        // On creation the new row is not yet counted, so the largest legal
+        // position is `count + 1` (append at the very end of the list).
+        $maxPosition = Question::count() + 1;
+        if ($sortOrder < 1 || $sortOrder > $maxPosition) {
+            Response::error("Position invalide (attendu entre 1 et $maxPosition)", 422);
+        }
+
         $newId = Question::create($key, $text, $sortOrder);
         Response::json(['id' => $newId], 201);
     }
@@ -59,6 +66,13 @@ class AdminController
 
         if (!$id || !$text) {
             Response::error('id et text sont requis');
+        }
+
+        // The question already exists, so the upper bound is the current row
+        // count. `count + 1` is reserved for inserts.
+        $maxPosition = max(1, Question::count());
+        if ($sortOrder < 1 || $sortOrder > $maxPosition) {
+            Response::error("Position invalide (attendu entre 1 et $maxPosition)", 422);
         }
 
         Question::update($id, $text, $sortOrder, $active);

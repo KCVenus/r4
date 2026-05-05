@@ -55,10 +55,11 @@ CREATE TABLE IF NOT EXISTS `questions` (
   `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `question_key` VARCHAR(50)  NOT NULL,
   `text`         TEXT         NOT NULL,
-  `sort_order`   INT          NOT NULL DEFAULT 0,
+  `sort_order`   INT          NOT NULL DEFAULT 1,
   `active`       TINYINT(1)   NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_question_key` (`question_key`)
+  UNIQUE KEY `uq_question_key` (`question_key`),
+  CONSTRAINT `chk_questions_sort_order` CHECK (`sort_order` >= 1)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── 6. Options de chaque question ────────────────────────────
@@ -67,10 +68,11 @@ CREATE TABLE IF NOT EXISTS `question_options` (
   `question_id` INT UNSIGNED NOT NULL,
   `value`       VARCHAR(50)  NOT NULL,
   `label`       VARCHAR(255) NOT NULL,
-  `sort_order`  INT          NOT NULL DEFAULT 0,
+  `sort_order`  INT          NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_opt_question`
-    FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE
+    FOREIGN KEY (`question_id`) REFERENCES `questions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `chk_question_options_sort_order` CHECK (`sort_order` >= 1)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── 7. Formations ─────────────────────────────────────────────
